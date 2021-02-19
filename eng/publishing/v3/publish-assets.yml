@@ -23,7 +23,8 @@ jobs:
     - name: AzDOBuildId
       value: $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOBuildId'] ]
   pool:
-    vmImage: 'windows-2019'
+    name: NetCoreInternal-Pool
+    queue: buildpool.server.amd64.vs2019
   steps:
     - task: DownloadBuildArtifacts@0
       displayName: Download Build Assets
