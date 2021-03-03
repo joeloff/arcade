@@ -831,6 +831,46 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             }
         }
 
+        private async Task PublishPackagesToAzDoNugetFeedAsyncOneByOne(
+            HashSet<PackageArtifactModel> packagesToPublish,
+            Dictionary<string, HashSet<Asset>> buildAssets,
+            TargetFeedConfig feedConfig)
+        {
+            await PushNugetPackagesAsync(packagesToPublish, feedConfig, maxClients: MaxClients,
+                async (feed, httpClient, package, feedAccount, feedVisibility, feedName) =>
+                {
+                    string containerId = GetContainerId().Result;
+                    string temporaryPackageDirectory =
+                        Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
+                    if (!Directory.Exists(temporaryPackageDirectory))
+                    {
+                        Directory.CreateDirectory(temporaryPackageDirectory);
+                        Log.LogMessage(MessageImportance.High, $"Successfully created temp directory for packages, location is {temporaryPackageDirectory}");
+                    }
+
+                    if (Directory.Exists(temporaryPackageDirectory))
+                    {
+                        var packageFilename = $"{package.Id}.{package.Version}.nupkg";
+                        string localPackagePath = "";
+                        if (!string.IsNullOrEmpty(containerId))
+                        {
+                            localPackagePath = await DownloadFileAsync("PackageArtifacts", containerId, packageFilename,
+                                temporaryPackageDirectory);
+                        }
+                        if (!File.Exists(localPackagePath))
+                        {
+                            Log.LogError($"Could not locate '{package.Id}.{package.Version}' at '{localPackagePath}'");
+                            return;
+                        }
+
+                        TryAddAssetLocation(package.Id, package.Version, buildAssets, feedConfig,
+                            AddAssetLocationToAssetAssetLocationType.NugetFeed);
+
+                        await PushNugetPackageAsync(feed, httpClient, localPackagePath, package.Id, package.Version,
+                            feedAccount, feedVisibility, feedName);
+                    }
+                });
+        }
         private async Task PublishPackagesToAzDoNugetFeedAsync(
             HashSet<PackageArtifactModel> packagesToPublish,
             Dictionary<string, HashSet<Asset>> buildAssets,

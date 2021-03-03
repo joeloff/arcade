@@ -98,17 +98,17 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     return false;
                 }
 
-                string temporarySymbolsLocation =
-                    Path.GetFullPath(Path.Combine(BlobAssetsBasePath, @"..\", "tempSymbols"));
+                //string temporarySymbolsLocation =
+                    //Path.GetFullPath(Path.Combine(BlobAssetsBasePath, @"..\", "tempSymbols"));
 
-                EnsureTemporarySymbolDirectoryExists(temporarySymbolsLocation);
+                //EnsureTemporarySymbolDirectoryExists(temporarySymbolsLocation);
 
                 SplitArtifactsInCategories(BuildModel);
-                DeleteSymbolTemporaryFiles(temporarySymbolsLocation);
+                //DeleteSymbolTemporaryFiles(temporarySymbolsLocation);
 
                 //Copying symbol files to temporary location is required because the symUploader API needs read/write access to the files,
                 //since we publish blobs and symbols in parallel this will cause IO exceptions.
-                CopySymbolFilesToTemporaryLocation(BuildModel, temporarySymbolsLocation);
+                //CopySymbolFilesToTemporaryLocation(BuildModel, temporarySymbolsLocation);
 
                 if (Log.HasLoggedErrors)
                 {
@@ -205,9 +205,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                         //SymWebToken, SymbolPublishingExclusionsFile, temporarySymbolsLocation, PublishSpecialClrFiles)
                 });
 
-                DeleteSymbolTemporaryFiles(temporarySymbolsLocation);
-                DeleteSymbolTemporaryDirectory(temporarySymbolsLocation);
-                Log.LogMessage(MessageImportance.High, "Successfully deleted the temporary symbols directory.");
+                //DeleteSymbolTemporaryFiles(temporarySymbolsLocation);
+                //DeleteSymbolTemporaryDirectory(temporarySymbolsLocation);
+                //Log.LogMessage(MessageImportance.High, "Successfully deleted the temporary symbols directory.");
                 await PersistPendingAssetLocationAsync(client);
             }
             catch (Exception e)
