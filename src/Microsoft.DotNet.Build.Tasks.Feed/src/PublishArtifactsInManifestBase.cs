@@ -141,10 +141,10 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         public string AzureApiVersionForFileDownload { get; set; }= "4.1-preview.4";
 
         [Required]
-        public string AzureProject { get; set; } = "internal";
+        public string AzureProject { get; set; }
 
         [Required] public int BuildId { get; set; }
-        public static string AzureDevOpsOrg { get; set; } = "dnceng";
+        public string AzureDevOpsOrg { get; set; }
 
         private readonly string AzureDevOpsBaseUrl = $"https://dev.azure.com";
 
@@ -444,6 +444,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 {
                     string uri =
                         $"{AzureDevOpsBaseUrl}/{AzureDevOpsOrg}/{AzureProject}/_apis/build/builds/{BuildId}/artifacts?api-version={AzureDevOpsFeedsApiVersion}";
+                    Log.LogMessage(MessageImportance.High, $"Uri to download container id : {uri}");
                     HttpRequestMessage getMessage = new HttpRequestMessage(HttpMethod.Get, uri);
                     HttpResponseMessage response = await client.SendAsync(getMessage);
                     response.EnsureSuccessStatusCode();
@@ -456,6 +457,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                         {
                             string[] segment = bd.resource.data.Split('/');
                             containerId = segment[1];
+                            Log.LogMessage(MessageImportance.High, $"ContainerId : {containerId}");
                             break;
                         }
                     }
@@ -479,7 +481,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 string uri =
                     $"{AzureDevOpsBaseUrl}/{AzureDevOpsOrg}/_apis/resources/Containers/{containerId}?itemPath=/{artifact}/{fileName}&isShallow=true&api-version={AzureApiVersionForFileDownload}";
-                Log.LogMessage(MessageImportance.High, $"uri = {uri}");
+                Log.LogMessage(MessageImportance.High, $"download file uri = {uri}");
                 HttpRequestMessage getMessage = new HttpRequestMessage(HttpMethod.Get, uri);
                 HttpResponseMessage response = await client.SendAsync(getMessage);
                 response.EnsureSuccessStatusCode();
@@ -538,6 +540,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         {
 
             string address = $"https://{baseAddressSubpath}dev.azure.com/{accountName}/";
+            Log.LogMessage(MessageImportance.High, $"Address : {address} , ProjectName : {projectName}");
             if (!string.IsNullOrEmpty(projectName))
             {
                 address += $"{projectName}/";

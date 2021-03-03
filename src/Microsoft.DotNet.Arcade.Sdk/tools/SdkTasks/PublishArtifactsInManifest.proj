@@ -141,7 +141,10 @@
       ChecksumsFeedOverride="$(ChecksumsFeedOverride)"
       TransportFeedOverride="$(TransportFeedOverride)"
       ShippingFeedOverride="$(ShippingFeedOverride)"
-      SymbolsFeedOverride="$(SymbolsFeedOverride)" />
+      SymbolsFeedOverride="$(SymbolsFeedOverride)" 
+      BuildId="$(BuildId)"
+      AzureDevOpsOrg="$(AzureDevOpsOrg)"
+      AzureProject="$(AzureProject)"/>
   </Target>
 
   <ItemGroup>

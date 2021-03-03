@@ -88,6 +88,9 @@ jobs:
           /p:BuildQuality='${{ parameters.buildQuality }}'
           /p:AzdoApiToken='$(dn-bot-dotnet-build-rw-code-rw)'
           /p:TemporaryStagingDir='$(Build.ArtifactStagingDirectory)/'
+          /p:BuildId='${AzDOBuildId}'
+          /p:AzureDevOpsOrg='dnceng'
+          /p:AzureProject='${AzDOProjectName}'
 
     - template: /eng/common/templates/steps/publish-logs.yml
       parameters:

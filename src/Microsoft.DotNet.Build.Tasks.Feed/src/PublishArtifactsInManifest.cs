@@ -138,6 +138,11 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
         public string TemporaryStagingDir { get; set;}
 
+        public int BuildId { get; set; }
+
+        public string AzdoProject { get; set; }
+
+        public string AzureDevOpsOrg { get; set; }
         /// <summary>
         /// Path to dll and pdb files
         /// </summary>
@@ -378,7 +383,10 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 TransportFeedOverride = this.TransportFeedOverride,
                 SymbolsFeedOverride = this.SymbolsFeedOverride,
                 TemporaryStagingDir =  this.TemporaryStagingDir,
-                AzdoApiToken = this.AzdoApiToken
+                AzdoApiToken = this.AzdoApiToken,
+                BuildId = this.BuildId,
+                AzureProject = this.AzdoProject,
+                AzureDevOpsOrg = this.AzureDevOpsOrg
             };
         }
     }
