@@ -94,6 +94,7 @@
       <InternalInstallersFeedKey>$(InternalInstallersAzureAccountKey)</InternalInstallersFeedKey>
       <ChecksumsFeedKey>$(ChecksumsAzureAccountKey)</ChecksumsFeedKey>
       <InternalChecksumsFeedKey>$(InternalChecksumsAzureAccountKey)</InternalChecksumsFeedKey>
+      <AllowFeedOverrides Condition="'$(AllowFeedOverrides)' == ''">false</AllowFeedOverrides>
     </PropertyGroup>
 
     <Error
@@ -134,7 +135,13 @@
       PublishSpecialClrFiles="$(PublishSpecialClrFiles)"
       BuildQuality="$(BuildQuality)"
       AzdoApiToken="$(AzdoApiToken)" 
-      TemporaryStagingDir="$(TemporaryStagingDir)"/>
+      TemporaryStagingDir="$(TemporaryStagingDir)"
+      AllowFeedOverrides="$(AllowFeedOverrides)"
+      InstallersFeedOverride="$(InstallersFeedOverride)"
+      ChecksumsFeedOverride="$(ChecksumsFeedOverride)"
+      TransportFeedOverride="$(TransportFeedOverride)"
+      ShippingFeedOverride="$(ShippingFeedOverride)"
+      SymbolsFeedOverride="$(SymbolsFeedOverride)" />
   </Target>
 
   <ItemGroup>
