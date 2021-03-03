@@ -23,6 +23,7 @@
       - SymWebToken                             : Token used to publish symbol blobs, dll and pdb to Symweb
       - SymbolPublishingExclusionsFile          : Files that have to be excluded from symbol publishing 
       - PdbArtifactsBasePath                    : Path to dlls and pdbs
+      - AzdoApiToken                            : Azdo token for API call
 
       Optional aka.ms link generation parameters:
         - AkaMSClientId                         : Client ID for the aka.ms AD application
@@ -131,7 +132,9 @@
       SymbolPublishingExclusionsFile="$(SymbolPublishingExclusionsFile)"
       PdbArtifactsBasePath="$(PDBArtifactsBasePath)"
       PublishSpecialClrFiles="$(PublishSpecialClrFiles)"
-      BuildQuality="$(BuildQuality)" />
+      BuildQuality="$(BuildQuality)"
+      AzdoApiToken="$(AzdoApiToken)" 
+      TemporaryStagingDir="$(TemporaryStagingDir)"/>
   </Target>
 
   <ItemGroup>

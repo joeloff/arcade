@@ -188,9 +188,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
                 await Task.WhenAll(new Task[] {
                     HandlePackagePublishingAsync(buildAssets),
-                    HandleBlobPublishingAsync(buildAssets),
-                    HandleSymbolPublishingAsync(PdbArtifactsBasePath, MsdlToken,
-                        SymWebToken, SymbolPublishingExclusionsFile, temporarySymbolsLocation, PublishSpecialClrFiles)
+                    //HandleBlobPublishingAsync(buildAssets),
+                    //HandleSymbolPublishingAsync(PdbArtifactsBasePath, MsdlToken,
+                        //SymWebToken, SymbolPublishingExclusionsFile, temporarySymbolsLocation, PublishSpecialClrFiles)
                 });
 
                 DeleteSymbolTemporaryFiles(temporarySymbolsLocation);

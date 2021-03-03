@@ -5,8 +5,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -14,11 +16,15 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using Microsoft.Build.Framework;
+using Microsoft.Build.Tasks;
 using Microsoft.DotNet.Build.Tasks.Feed.Model;
 using Microsoft.DotNet.Maestro.Client;
 using Microsoft.DotNet.Maestro.Client.Models;
 using Microsoft.DotNet.VersionTools.BuildManifest.Model;
+using Microsoft.Extensions.Azure;
+using Newtonsoft.Json;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using static Microsoft.DotNet.Build.Tasks.Feed.GeneralUtils;
@@ -125,6 +131,23 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         private const string MsdlServerPath = "https://microsoftpublicsymbols.artifacts.visualstudio.com/DefaultCollection";
 
         private const int ExpirationInDays = 3650;
+
+        [Required] 
+        public string AzdoApiToken { get; set; }
+
+        public string AzureDevOpsFeedsApiVersion { get; set; } = "6.0";
+
+        public string AzureApiVersionForFileDownload { get; set; }= "4.1-preview.4";
+
+        [Required]
+        public string AzureProject { get; set; } = "internal";
+
+        public string TemporaryStagingDir { get; set; }
+
+        [Required] public int BuildId { get; set; }
+        public static string AzureDevOpsOrg { get; set; } = "dnceng";
+
+        private readonly string AzureDevOpsBaseUrl = $"https://dev.azure.com";
 
         protected LatestLinksManager LinkManager { get; set; } = null;
 
@@ -411,6 +434,201 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         }
 
         /// <summary>
+        /// Gets the container Id, that is going to be used in another API call to download the assets
+        /// </summary>
+        /// <returns></returns>
+        public async Task<string> GetContainerId()
+        {
+            using (HttpClientHandler handler = new HttpClientHandler {CheckCertificateRevocationList = true})
+            {
+                using (HttpClient client = CreateHttpClient(handler, AzureDevOpsOrg))
+                {
+                    string uri =
+                        $"{AzureDevOpsBaseUrl}/{AzureDevOpsOrg}/{AzureProject}/_apis/build/builds/{BuildId}/artifacts?api-version={AzureDevOpsFeedsApiVersion}";
+                    HttpRequestMessage getMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+                    HttpResponseMessage response = await client.SendAsync(getMessage);
+                    response.EnsureSuccessStatusCode();
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    BuildArtifacts buildArtifacts = JsonConvert.DeserializeObject<BuildArtifacts>(responseBody);
+                    string containerId = "";
+                    foreach (var bd in buildArtifacts.value)
+                    {
+                        if (string.Equals(bd.name, "BlobArtifacts"))
+                        {
+                            string[] segment = bd.resource.data.Split('/');
+                            containerId = segment[1];
+                            break;
+                        }
+                    }
+                    handler.Dispose();
+                    client.Dispose();
+                    response.Dispose();
+                    handler.Dispose();
+                    return containerId;
+                }
+            }
+        }
+
+        public async Task<string> DownloadFileAsync(string artifact, string containerId, string fileName, string tempStagingDirectory)
+        {
+            using HttpClientHandler handler = new HttpClientHandler()
+            {
+                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                    CheckCertificateRevocationList = true
+            };
+            using (HttpClient client = CreateHttpClient(handler, AzureDevOpsOrg))
+            {
+                string uri =
+                    $"{AzureDevOpsBaseUrl}/{AzureDevOpsOrg}/_apis/resources/Containers/{containerId}?itemPath=/{artifact}/{fileName}&isShallow=true&api-version={AzureApiVersionForFileDownload}";
+                Log.LogMessage(MessageImportance.High, $"uri = {uri}");
+                HttpRequestMessage getMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+                HttpResponseMessage response = await client.SendAsync(getMessage);
+                response.EnsureSuccessStatusCode();
+
+                string localPackagePath = Path.Combine(tempStagingDirectory, fileName);
+                Log.LogMessage(MessageImportance.High, $"Downloading file in the following path : {localPackagePath}");
+
+                using (var fs = new FileStream(localPackagePath, FileMode.Create,
+                    FileAccess.Write))
+                {
+                    using (var stream = await response.Content.ReadAsStreamAsync())
+                    {
+                        {
+                            await stream.CopyToAsync(fs);
+                        }
+                    }
+                }
+                Log.LogMessage(MessageImportance.High, $"File has been successfully downloaded");
+                response.Dispose();
+                getMessage.Dispose();
+                handler.Dispose();
+                client.Dispose();
+                return localPackagePath;
+            }
+        }
+
+/*        public void ParseXmlFile()
+        {
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load(@"C:\Users\epananth\Downloads\MergedManifest.xml");
+            XmlNodeList itemsToSign = xmlDoc.GetElementsByTagName("ItemsToSign");
+            XmlNodeList package = xmlDoc.GetElementsByTagName("Package");
+            XmlNodeList blob = xmlDoc.GetElementsByTagName("Blob");
+            HashSet<string> packageFiles = new HashSet<string>();
+            HashSet<string> blobFiles = new HashSet<string>();
+
+            for (int i = 0; i < package.Count; i++)
+            {
+                string fileName = "";
+                fileName = $"{package[i].Attributes["Id"].Value}.{package[i].Attributes["Version"].Value}.nupkg";
+                packageFiles.Add(fileName);
+            }
+
+            for (int i = 0; i < blob.Count; i++)
+            {
+                var blobLocation = blob[i].Attributes["Id"].Value.ToString();
+                var segments = blobLocation.Split('/');
+                var fileName = segments[segments.Length - 1];
+                blobFiles.Add(fileName);
+            }
+        }*/
+
+        // download the package file one by one and then upload it to Azure storage 
+
+        public HttpClient CreateHttpClient(HttpClientHandler handler ,string accountName, string projectName = null, string versionOverride = null, string baseAddressSubpath = null)
+        {
+
+            string address = $"https://{baseAddressSubpath}dev.azure.com/{accountName}/";
+            if (!string.IsNullOrEmpty(projectName))
+            {
+                address += $"{projectName}/";
+            }
+
+            var client = new HttpClient(handler)
+            {
+                BaseAddress = new Uri(address)
+            };
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Basic",
+                Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "",
+                    AzdoApiToken))));
+            client.DefaultRequestHeaders.Add(
+                "Accept",
+                $"application/xml;api-version={versionOverride ?? AzureDevOpsFeedsApiVersion}");
+            return client;
+        }
+
+        private async Task HandlePackagePublishingOneByOneAsync(
+            HashSet<PackageArtifactModel> packagesToPublish,
+            Dictionary<string, HashSet<Asset>> buildAssets,
+            TargetFeedConfig feedConfig)
+        {
+            string containerId = GetContainerId().Result;
+            var blobFeedAction = CreateBlobFeedAction(feedConfig);
+            var pushOptions = new PushOptions
+            {
+                AllowOverwrite = feedConfig.AllowOverwrite,
+                PassIfExistingItemIdentical = true
+            };
+            string temporaryPackageDirectory =
+                Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
+            if (!Directory.Exists(temporaryPackageDirectory))
+            {
+                Directory.CreateDirectory(temporaryPackageDirectory);
+                Log.LogMessage(MessageImportance.High, $"Successfully created temp directory for packages, location is {temporaryPackageDirectory}");
+            }
+
+            if (Directory.Exists(temporaryPackageDirectory))
+            {
+                foreach (var package in packagesToPublish)
+                {
+                    var packageFilename = $"{package.Id}.{package.Version}.nupkg";
+                    string path = "";
+                    if (!string.IsNullOrEmpty(containerId))
+                    {
+                        path = await DownloadFileAsync("PackageArtifacts", containerId, packageFilename,
+                            temporaryPackageDirectory);
+                    }
+
+                    if (Log.HasLoggedErrors)
+                    {
+                        return;
+                    }
+
+                    IEnumerable<string> test = new List<string>();
+                    test.ToList().Add(path);
+                    packagesToPublish
+                        .ToList()
+                        .ForEach(package => TryAddAssetLocation(package.Id, package.Version, buildAssets, feedConfig,
+                            AddAssetLocationToAssetAssetLocationType.NugetFeed));
+
+                    await blobFeedAction.PushToFeedAsync(test, pushOptions);
+                    try
+                    {
+                        string[] fileEntries = Directory.GetFiles(temporaryPackageDirectory);
+                        foreach (var file in fileEntries)
+                        {
+                            File.Delete(file);
+                            Log.LogMessage(MessageImportance.High, $"File {file} is successfully deleted");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogWarning(ex.Message);
+                    }
+                }
+            }
+            try
+            {
+                Directory.Delete(temporaryPackageDirectory);
+                Log.LogMessage(MessageImportance.High, $"Successfully deleted package directory");
+            }
+            catch (Exception ex)
+            {
+                Log.LogWarning(ex.Message);
+            }
+        }
+        /// <summary>
         ///     Handle package publishing for all the feed configs.
         /// </summary>
         /// <param name="client">Maestro API client</param>
@@ -448,7 +666,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                                 publishTasks.Add(PublishPackagesToAzDoNugetFeedAsync(filteredPackages, buildAssets, feedConfig));
                                 break;
                             case FeedType.AzureStorageFeed:
-                                publishTasks.Add(PublishPackagesToAzureStorageNugetFeedAsync(filteredPackages, buildAssets, feedConfig));
+                                publishTasks.Add(HandlePackagePublishingOneByOneAsync(filteredPackages, buildAssets, feedConfig));
                                 break;
                             default:
                                 Log.LogError($"Unknown target feed type for category '{category}': '{feedConfig.Type}'.");
