@@ -86,7 +86,7 @@ jobs:
           /p:MsdlToken=$(microsoft-symbol-server-pat)
           /p:SymWebToken=$(symweb-symbol-server-pat)
           /p:BuildQuality='${{ parameters.buildQuality }}'
-          /p:AzdoApiToken='$(dn-bot-dnceng-universal-packages-rw)'
+          /p:AzdoApiToken='$(dn-bot-dotnet-build-rw-code-rw)'
           /p:TemporaryStagingDir='$(Build.ArtifactStagingDirectory)/'
 
     - template: /eng/common/templates/steps/publish-logs.yml
