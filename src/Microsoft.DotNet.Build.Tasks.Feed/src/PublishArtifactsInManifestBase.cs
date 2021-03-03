@@ -662,7 +662,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                         switch (feedConfig.Type)
                         {
                             case FeedType.AzDoNugetFeed:
-                                publishTasks.Add(PublishPackagesToAzDoNugetFeedAsync(filteredPackages, buildAssets, feedConfig));
+                                publishTasks.Add(PublishPackagesToAzDoNugetFeedAsyncOneByOne(filteredPackages, buildAssets, feedConfig));
                                 break;
                             case FeedType.AzureStorageFeed:
                                 publishTasks.Add(HandlePackagePublishingOneByOneAsync(filteredPackages, buildAssets, feedConfig));
