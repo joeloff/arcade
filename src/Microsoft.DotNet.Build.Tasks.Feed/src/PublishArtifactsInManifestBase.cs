@@ -142,8 +142,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         [Required]
         public string AzureProject { get; set; } = "internal";
 
-        public string TemporaryStagingDir { get; set; }
-
         [Required] public int BuildId { get; set; }
         public static string AzureDevOpsOrg { get; set; } = "dnceng";
 
@@ -571,7 +569,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 PassIfExistingItemIdentical = true
             };
             string temporaryPackageDirectory =
-                Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
+                Path.GetFullPath(Path.Combine(PackageAssetsBasePath, @"..\", "tempPackage"));
             if (!Directory.Exists(temporaryPackageDirectory))
             {
                 Directory.CreateDirectory(temporaryPackageDirectory);
