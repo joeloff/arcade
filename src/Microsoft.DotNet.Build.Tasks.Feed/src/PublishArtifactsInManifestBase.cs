@@ -109,6 +109,10 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
         public string BuildQuality { get; set; }
 
+        public string AzdoApiToken { get; set; }
+
+        public string TemporaryStagingDir { get; set; }
+
         public readonly Dictionary<TargetFeedContentType, HashSet<TargetFeedConfig>> FeedConfigs = 
             new Dictionary<TargetFeedContentType, HashSet<TargetFeedConfig>>();
 
@@ -131,9 +135,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         private const string MsdlServerPath = "https://microsoftpublicsymbols.artifacts.visualstudio.com/DefaultCollection";
 
         private const int ExpirationInDays = 3650;
-
-        [Required] 
-        public string AzdoApiToken { get; set; }
 
         public string AzureDevOpsFeedsApiVersion { get; set; } = "6.0";
 
@@ -569,7 +570,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 PassIfExistingItemIdentical = true
             };
             string temporaryPackageDirectory =
-                Path.GetFullPath(Path.Combine(PackageAssetsBasePath, @"..\", "tempPackage"));
+                Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
             if (!Directory.Exists(temporaryPackageDirectory))
             {
                 Directory.CreateDirectory(temporaryPackageDirectory);

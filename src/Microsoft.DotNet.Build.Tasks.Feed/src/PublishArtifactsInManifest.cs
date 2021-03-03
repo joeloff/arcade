@@ -134,6 +134,10 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
         public string SymbolsFeedOverride { get; set; }
 
+        public string AzdoApiToken {get; set;}
+
+        public string TemporaryStagingDir { get; set;}
+
         /// <summary>
         /// Path to dll and pdb files
         /// </summary>
@@ -372,7 +376,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 ChecksumsFeedOverride = this.ChecksumsFeedOverride,
                 ShippingFeedOverride = this.ShippingFeedOverride,
                 TransportFeedOverride = this.TransportFeedOverride,
-                SymbolsFeedOverride = this.SymbolsFeedOverride
+                SymbolsFeedOverride = this.SymbolsFeedOverride,
+                TemporaryStagingDir =  this.TemporaryStagingDir,
+                AzdoApiToken = this.AzdoApiToken
             };
         }
     }

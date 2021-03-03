@@ -87,6 +87,7 @@ jobs:
           /p:SymWebToken=$(symweb-symbol-server-pat)
           /p:BuildQuality='${{ parameters.buildQuality }}'
           /p:AzdoApiToken='$(dn-bot-dnceng-universal-packages-rw)'
+          /p:TemporaryStagingDir='$(Build.ArtifactStagingDirectory)/'
 
     - template: /eng/common/templates/steps/publish-logs.yml
       parameters:
