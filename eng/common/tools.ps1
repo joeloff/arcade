@@ -141,7 +141,7 @@ function InitializeDotNetCli([bool]$install, [bool]$createSdkLocationFile) {
 
   # Use dotnet installation specified in DOTNET_INSTALL_DIR if it contains the required SDK version,
   # otherwise install the dotnet CLI and SDK to repo local .dotnet directory to avoid potential permission issues.
-  if ((-not $globalJsonHasRuntimes) -and ($env:DOTNET_INSTALL_DIR -ne $null) -and (Test-Path(Join-Path $env:DOTNET_INSTALL_DIR "sdk\$dotnetSdkVersion"))) {
+  if ((-not $globalJsonHasRuntimes) -and (-not [string]::IsNullOrEmpty($env:DOTNET_INSTALL_DIR)) -and (Test-Path(Join-Path $env:DOTNET_INSTALL_DIR "sdk\$dotnetSdkVersion"))) {
     $dotnetRoot = $env:DOTNET_INSTALL_DIR
   } else {
     $dotnetRoot = Join-Path $RepoRoot '.dotnet'
@@ -166,7 +166,7 @@ function InitializeDotNetCli([bool]$install, [bool]$createSdkLocationFile) {
       $sdkCacheFileTemp = Join-Path $ToolsetDir $([System.IO.Path]::GetRandomFileName())
     }
     until (!(Test-Path $sdkCacheFileTemp))
-    Set-Content -Path $sdkCacheFileTemp -Value $dotnetRoot
+    Set-Content -Path $sdkCacheFileTemp -Value $dotnetRoot -Encoding utf8
 
     try {
       Move-Item -Force $sdkCacheFileTemp (Join-Path $ToolsetDir 'sdk.txt')
