@@ -192,7 +192,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 }
 
                 CheckForStableAssetsInNonIsolatedFeeds();
-
+                
                 if (Log.HasLoggedErrors)
                 {
                     return false;
@@ -201,8 +201,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 await Task.WhenAll(new Task[] {
                     HandlePackagePublishingAsync(buildAssets),
                     HandleBlobPublishingAsync(buildAssets),
-                    //HandleSymbolPublishingAsync(PdbArtifactsBasePath, MsdlToken,
-                        //SymWebToken, SymbolPublishingExclusionsFile, temporarySymbolsLocation, PublishSpecialClrFiles)
+                    HandleSymbolPublishingAsync(buildAssets,PdbArtifactsBasePath, MsdlToken,
+                        /SymWebToken, SymbolPublishingExclusionsFile, temporarySymbolsLocation, PublishSpecialClrFiles)
                 });
 
                 DeleteTemporaryFiles(temporarySymbolsLocation);

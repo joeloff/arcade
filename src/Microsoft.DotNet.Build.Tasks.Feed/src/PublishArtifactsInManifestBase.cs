@@ -348,6 +348,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         /// <param name="publishSpecialClrFiles">If true, the special coreclr module indexed files like DBI, DAC and SOS are published</param>
         /// <returns></returns>
         public async Task HandleSymbolPublishingAsync (
+            Dictionary<string, HashSet<Asset>> buildAssets,
             string pdbArtifactsBasePath,
             string msdlToken, 
             string symWebToken,
@@ -355,6 +356,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             string temporarySymbolsLocation,
             bool publishSpecialClrFiles)
         {
+
             StringBuilder symbolLog = new StringBuilder();
             symbolLog.AppendLine("Publishing Symbols to Symbol server: ");
 
@@ -363,6 +365,12 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 string[] fileEntries = Directory.GetFiles(temporarySymbolsLocation);
 
                 var category = TargetFeedContentType.Symbols;
+
+                string containerId = GetContainerId().Result;
+                string temporarySymbDirectory =
+                    Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempSymb"));
+                EnsureTemporaryDirectoryExists(temporarySymbDirectory);
+                HashSet<BlobArtifactModel> blobs = BlobsByCategory[TargetFeedContentType.Symbols];
 
                 HashSet<TargetFeedConfig> feedConfigsForSymbols = FeedConfigs[category];
 
@@ -376,6 +384,47 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     var dllEntries = System.IO.Directory.EnumerateFiles(pdbArtifactsBasePath, "*.dll", System.IO.SearchOption.AllDirectories);
                     filesToSymbolServer = pdbEntries.Concat(dllEntries);
                 }
+
+                if (Directory.Exists(temporarySymbDirectory) && string.IsNullOrEmpty(containerId))
+                {
+                    foreach (var blob in blobs)
+                    {
+                        string fileName = Path.GetFileName(blob.Id);
+                        string localBlobPath =  await DownloadFileAsync("BlobArtifacts", containerId, fileName,
+                            temporarySymbDirectory);
+                        IEnumerable<string> symbolFile = new List<string>();
+                        symbolFile.ToList().Add(localBlobPath);
+                        foreach (var server in serversToPublish)
+                        {
+                            var serverPath = server.Key;
+                            var token = server.Value;
+                            symbolLog.AppendLine($"Publishing symbol packages to {serverPath}:");
+                            
+                            await PublishSymbolsHelper.PublishAsync(
+                                Log,
+                                serverPath,
+                                token,
+                                symbolFile,
+                                filesToSymbolServer,
+                                null,
+                                ExpirationInDays,
+                                false,
+                                publishSpecialClrFiles,
+                                null,
+                                false,
+                                false,
+                                true);
+                        }
+                    }
+                    symbolLog.AppendLine(
+                        $"Performing symbol publishing... \nExpirationInDays : {ExpirationInDays} \nConvertPortablePdbsToWindowsPdb : false \ndryRun: false ");
+                    symbolLog.Append($"\nTotal number of symbol files : {blobs.Count}");
+                    symbolLog.AppendLine("Successfully published to Symbol Server.");
+                    symbolLog.AppendLine();
+                    Log.LogMessage(MessageImportance.High, symbolLog.ToString());
+                    symbolLog.Clear();
+                }
+
 
                 foreach (var server in serversToPublish)
                 {
@@ -707,6 +756,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             string shippingString = blob.NonShipping ? "NonShipping" : "Shipping";
                             Log.LogMessage(MessageImportance.High, $"Blob {blob.Id} ({shippingString}) should go to {feedConfig.TargetURL} ({isolatedString}{internalString})");
                         }
+
                         switch (feedConfig.Type)
                         {
                             case FeedType.AzDoNugetFeed:

@@ -75,7 +75,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed.Tests
             Assert.True(test.ContainsKey(SymWeb));
             Assert.True(test.Count == 2);
         }
-
+/*
         [Fact]
         public void TemporarySymbolDirectoryDoesNotExists()
         {
@@ -87,7 +87,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed.Tests
             var path = TestInputs.GetFullPath("Symbol");
             var publish = task.HandleSymbolPublishingAsync(path, MsdlToken, SymWebToken, "", path, false);
             Assert.True(task.Log.HasLoggedErrors);
-        }
+        }*/
 
         [Fact]
         public void TemporarySymbolsDirectoryTest()
