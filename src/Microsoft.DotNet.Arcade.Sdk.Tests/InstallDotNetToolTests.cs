@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Arcade.Common;
 using Microsoft.Arcade.Test.Common;
+using Microsoft.Build.Utilities;
 using Microsoft.DotNet.Internal.DependencyInjection.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -98,7 +99,7 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
                         It.Is<IEnumerable<string>>(args => args.Count() == _expectedArgs.Count() && args.All(y => _expectedArgs.Contains(y)))),
                     Times.Never);
 
-            _commandMock.Verify(x => x.Execute(), Times.Never);
+            _commandMock.Verify(x => x.Execute(It.IsAny<TaskLoggingHelper>()), Times.Never);
         }
 
         [Fact]
@@ -110,7 +111,7 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
                 .Returns(false);
 
             _commandMock
-                .Setup(x => x.Execute())
+                .Setup(x => x.Execute(It.IsAny<TaskLoggingHelper>()))
                 .Returns(new CommandResult(new ProcessStartInfo(), 0, "Tool installed", null));
 
             var collection = CreateMockServiceCollection();
@@ -122,7 +123,7 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
 
             // Verify
             _commandFactoryMock.VerifyAll();
-            _commandMock.Verify(x => x.Execute(), Times.Once);
+            _commandMock.Verify(x => x.Execute(It.IsAny<TaskLoggingHelper>()), Times.Once);
             _task.ToolPath.Should().Be(s_installedPath);
         }
 
@@ -135,7 +136,7 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
                 .Returns(false);
 
             _commandMock
-                .Setup(x => x.Execute())
+                .Setup(x => x.Execute(It.IsAny<TaskLoggingHelper>()))
                 .Returns(new CommandResult(new ProcessStartInfo(), 1, null, "Installation failed"));
 
             var collection = CreateMockServiceCollection();
@@ -147,7 +148,7 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
 
             // Verify
             _commandFactoryMock.VerifyAll();
-            _commandMock.Verify(x => x.Execute(), Times.Once);
+            _commandMock.Verify(x => x.Execute(It.IsAny<TaskLoggingHelper>()), Times.Once);
         }
 
         [Fact]
@@ -159,7 +160,7 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
                 .Returns(false);
 
             _commandMock
-                .Setup(x => x.Execute())
+                .Setup(x => x.Execute(It.IsAny<TaskLoggingHelper>()))
                 .Returns(new CommandResult(new ProcessStartInfo(), 0, "Tool installed", null));
 
             _expectedArgs = new[]
@@ -186,7 +187,7 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
 
             // Verify
             _commandFactoryMock.VerifyAll();
-            _commandMock.Verify(x => x.Execute(), Times.Once);
+            _commandMock.Verify(x => x.Execute(It.IsAny<TaskLoggingHelper>()), Times.Once);
             _task.ToolPath.Should().Be(s_installedPath);
         }
 
@@ -196,7 +197,7 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
         /// Second thread (skip task), waits for the first thread to finish and then verifies the existence of the tool.
         /// </summary>
         [Fact]
-        public async Task InstallsInParallelWithRealMutex()
+        public async System.Threading.Tasks.Task InstallsInParallelWithRealMutex()
         {
             // Setup
             var fileSystemMock1 = new Mock<IFileSystem>();
@@ -215,7 +216,7 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
 
             var hangingCommand = new Mock<ICommand>();
             hangingCommand
-                .Setup(x => x.Execute())
+                .Setup(x => x.Execute(It.IsAny<TaskLoggingHelper>()))
                 .Callback(() =>
                 {
                     hangingCommandCalled.SetResult(true);
@@ -261,12 +262,12 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
             using var provider1 = collection1.BuildServiceProvider();
             using var provider2 = collection2.BuildServiceProvider();
 
-            var installationTask = Task.Run(() => task1.InvokeExecute(provider1).Should().BeTrue());
+            var installationTask = System.Threading.Tasks.Task.Run(() => task1.InvokeExecute(provider1).Should().BeTrue());
 
             // Let's wait for the first `dotnet tool install` to be called (it will stay spinning)
             await hangingCommandCalled.Task;
 
-            var skipTask = Task.Run(() => task2.InvokeExecute(provider2).Should().BeTrue());
+            var skipTask = System.Threading.Tasks.Task.Run(() => task2.InvokeExecute(provider2).Should().BeTrue());
 
             // The first command must have been executed, let's verify the parameters
             hangingCommandFactoryMock
@@ -291,7 +292,7 @@ namespace Microsoft.DotNet.Arcade.Sdk.Tests
 
             // Let's give the installation task time to evaluate the command result
             // Let's give the skip task get its own Mutex and verify existence of the installation
-            await Task.WhenAll(installationTask, skipTask);
+            await System.Threading.Tasks.Task.WhenAll(installationTask, skipTask);
 
             // Verify
             _commandFactoryMock

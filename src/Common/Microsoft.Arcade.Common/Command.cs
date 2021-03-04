@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.Build.Utilities;
 
 namespace Microsoft.Arcade.Common
 {
@@ -52,7 +53,7 @@ namespace Microsoft.Arcade.Common
             return this;
         }
 
-        public CommandResult Execute()
+        public CommandResult Execute(TaskLoggingHelper logger = null)
         {
             ThrowIfRunning();
             _running = true;
@@ -61,6 +62,7 @@ namespace Microsoft.Arcade.Common
             {
                 _process.OutputDataReceived += (sender, args) =>
                 {
+                    logger.LogMessage(Build.Framework.MessageImportance.High, "@@@ " + args.Data);
                     ProcessData(args.Data, _stdOutCapture, _stdOutForward, _stdOutHandler);
                 };
             }
@@ -69,6 +71,7 @@ namespace Microsoft.Arcade.Common
             {
                 _process.ErrorDataReceived += (sender, args) =>
                 {
+                    logger.LogMessage(Build.Framework.MessageImportance.High, "$$$ " + args.Data);
                     ProcessData(args.Data, _stdErrCapture, _stdErrForward, _stdErrHandler);
                 };
             }
@@ -84,6 +87,8 @@ namespace Microsoft.Arcade.Common
 
             var sw = Stopwatch.StartNew();
             ReportExecBegin();
+
+            logger.LogMessage(Build.Framework.MessageImportance.High, "Starting " + _process.StartInfo.FileName + " " + string.Join(" ", _process.StartInfo.Arguments));
 
             _process.Start();
 

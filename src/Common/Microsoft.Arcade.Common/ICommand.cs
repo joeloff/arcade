@@ -3,12 +3,13 @@
 
 using System;
 using System.IO;
+using Microsoft.Build.Utilities;
 
 namespace Microsoft.Arcade.Common
 {
     public interface ICommand
     {
-        CommandResult Execute();
+        CommandResult Execute(TaskLoggingHelper logger = null);
 
         ICommand CaptureStdErr();
         ICommand CaptureStdOut();
