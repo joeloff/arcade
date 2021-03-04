@@ -203,7 +203,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     HandlePackagePublishingAsync(buildAssets),
                     HandleBlobPublishingAsync(buildAssets),
                     HandleSymbolPublishingAsync(buildAssets,PdbArtifactsBasePath, MsdlToken,
-                        /SymWebToken, SymbolPublishingExclusionsFile, temporarySymbolsLocation, PublishSpecialClrFiles)
+                        SymWebToken, SymbolPublishingExclusionsFile, temporarySymbolsLocation, PublishSpecialClrFiles)
                 });
 
                 DeleteTemporaryFiles(temporarySymbolsLocation);
