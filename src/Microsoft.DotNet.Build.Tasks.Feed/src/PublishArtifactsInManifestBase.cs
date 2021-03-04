@@ -143,7 +143,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         [Required]
         public string AzureProject { get; set; }
 
-        [Required] public int BuildId { get; set; }
+        [Required] public string BuildId { get; set; }
         public string AzureDevOpsOrg { get; set; }
 
         private readonly string AzureDevOpsBaseUrl = $"https://dev.azure.com";

@@ -138,9 +138,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
         public string TemporaryStagingDir { get; set;}
 
-        public int BuildId { get; set; }
+        public string BuildId { get; set; }
 
-        public string AzdoProject { get; set; }
+        public string AzureProject { get; set; }
 
         public string AzureDevOpsOrg { get; set; }
         /// <summary>
@@ -385,7 +385,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 TemporaryStagingDir =  this.TemporaryStagingDir,
                 AzdoApiToken = this.AzdoApiToken,
                 BuildId = this.BuildId,
-                AzureProject = this.AzdoProject,
+                AzureProject = this.AzureProject,
                 AzureDevOpsOrg = this.AzureDevOpsOrg
             };
         }
