@@ -22,6 +22,8 @@ jobs:
       value: $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOPipelineId'] ]
     - name: AzDOBuildId
       value: $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOBuildId'] ]
+    - name: AzDOAccount
+      value: $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOAccount'] ]
   pool:
     vmImage: 'windows-2019'
   steps:
@@ -89,7 +91,7 @@ jobs:
           /p:AzdoApiToken='$(dn-bot-dotnet-build-rw-code-rw)'
           /p:TemporaryStagingDir='$(Build.ArtifactStagingDirectory)/'
           /p:BuildId='$(AzDOBuildId)'
-          /p:AzureDevOpsOrg='dnceng'
+          /p:AzureDevOpsOrg=$(AzDOAccount)'
           /p:AzureProject='$(AzDOProjectName)'
 
     - template: /eng/common/templates/steps/publish-logs.yml

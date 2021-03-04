@@ -94,9 +94,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed.Tests
         {
             var publishTask = new PublishArtifactsInManifestV3();
             var path = TestInputs.GetFullPath("Test");
-            publishTask.EnsureTemporarySymbolDirectoryExists(path);
+            publishTask.EnsureTemporaryDirectoryExists(path);
             Assert.True(Directory.Exists(path));
-            publishTask.DeleteSymbolTemporaryDirectory(path);
+            publishTask.DeleteTemporaryDirectory(path);
             Assert.False(Directory.Exists(path));
         }
 
