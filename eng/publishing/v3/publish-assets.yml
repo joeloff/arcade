@@ -91,7 +91,7 @@ jobs:
           /p:AzdoApiToken='$(dn-bot-dotnet-build-rw-code-rw)'
           /p:TemporaryStagingDir='$(Build.ArtifactStagingDirectory)/'
           /p:BuildId='$(AzDOBuildId)'
-          /p:AzureDevOpsOrg=$(AzDOAccount)'
+          /p:AzureDevOpsOrg='$(AzDOBuildAccount)'
           /p:AzureProject='$(AzDOProjectName)'
 
     - template: /eng/common/templates/steps/publish-logs.yml
