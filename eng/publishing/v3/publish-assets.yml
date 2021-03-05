@@ -23,7 +23,7 @@ jobs:
     - name: AzDOBuildId
       value: $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOBuildId'] ]
     - name: AzDOAccount
-      value: $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOAccount'] ]
+      value: $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOBuildAccount'] ]
   pool:
     vmImage: 'windows-2019'
   steps:
