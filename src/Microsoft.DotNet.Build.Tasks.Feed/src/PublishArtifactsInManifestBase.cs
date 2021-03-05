@@ -366,7 +366,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             string temporarySymbDirectory =
                 Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempSymb"));
             EnsureTemporaryDirectoryExists(temporarySymbDirectory);
-            HashSet<BlobArtifactModel> blobs = BlobsByCategory[TargetFeedContentType.Symbols];
+            //var blobs = BlobsByCategory.Select(x => x.Value.ToString().EndsWith(".symbols.nupkg"));
+            HashSet<BlobArtifactModel> blobs = (HashSet<BlobArtifactModel>)BlobsByCategory.Select(x => x.Value.ToString().EndsWith(".symbols.nupkg")); 
 
             HashSet<TargetFeedConfig> feedConfigsForSymbols = FeedConfigs[category];
 
@@ -911,9 +912,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
                             await PushNugetPackageAsync(feed, httpClient, localPackagePath, package.Id, package.Version,
                                 feedAccount, feedVisibility, feedName);
-                            DeleteTemporaryFiles(temporaryPackageDirectory);
-                        
                     });
+                DeleteTemporaryFiles(temporaryPackageDirectory);
+
             }
             else
             {
@@ -1284,10 +1285,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                         return;
                     }
 
-                    blobsToPublish
-                        .ToList()
-                        .ForEach(blob => TryAddAssetLocation(blob.Id, assetVersion: null, buildAssets, feedConfig,
-                            AddAssetLocationToAssetAssetLocationType.Container));
+                    TryAddAssetLocation(blob.Id, assetVersion: null, buildAssets, feedConfig,
+                            AddAssetLocationToAssetAssetLocationType.Container);
                     IEnumerable<ITaskItem> blobs = new List<ITaskItem>();
                     blobs.ToList().Add(new Microsoft.Build.Utilities.TaskItem(localBlobPath,
                         new Dictionary<string, string>
