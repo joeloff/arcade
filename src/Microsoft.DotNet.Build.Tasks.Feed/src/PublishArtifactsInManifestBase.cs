@@ -383,7 +383,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 filesToSymbolServer = pdbEntries.Concat(dllEntries);
             }
 
-            if (Directory.Exists(temporarySymbDirectory) && string.IsNullOrEmpty(containerId))
+            if (Directory.Exists(temporarySymbDirectory) && !string.IsNullOrEmpty(containerId))
             {
                 foreach (var blob in blobs)
                 {
@@ -590,7 +590,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
             EnsureTemporaryDirectoryExists(temporaryPackageDirectory);
 
-            if (Directory.Exists(temporaryPackageDirectory) && string.IsNullOrEmpty(containerId))
+            if (Directory.Exists(temporaryPackageDirectory) && !string.IsNullOrEmpty(containerId))
             {
                 foreach (var package in packagesToPublish)
                 {
@@ -888,14 +888,12 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             string temporaryPackageDirectory =
                 Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
             EnsureTemporaryDirectoryExists(temporaryPackageDirectory);
-            if (Directory.Exists(temporaryPackageDirectory) && string.IsNullOrEmpty(containerId))
+            if (Directory.Exists(temporaryPackageDirectory) && !string.IsNullOrEmpty(containerId))
             {
                 await PushNugetPackagesAsync(packagesToPublish, feedConfig, maxClients: MaxClients,
                     async (feed, httpClient, package, feedAccount, feedVisibility, feedName) =>
                     {
-                        if (Directory.Exists(temporaryPackageDirectory) && !string.IsNullOrEmpty(containerId))
-                        {
-                            var packageFilename = $"{package.Id}.{package.Version}.nupkg";
+                        var packageFilename = $"{package.Id}.{package.Version}.nupkg";
                             string localPackagePath = "";
                             localPackagePath = await DownloadFileAsync("PackageArtifacts", containerId,
                                 packageFilename,
@@ -914,7 +912,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             await PushNugetPackageAsync(feed, httpClient, localPackagePath, package.Id, package.Version,
                                 feedAccount, feedVisibility, feedName);
                             DeleteTemporaryFiles(temporaryPackageDirectory);
-                        }
+                        
                     });
             }
             else
@@ -1147,7 +1145,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             localBlobPath = await DownloadFileAsync("BlobArtifacts", containerId, fileName,
                                     temporaryBlobDirectory);
 
-                                string id;
+                            string id;
                             string version;
                             // Determine package ID and version by asking the nuget libraries
                             using (var packageReader = new NuGet.Packaging.PackageArchiveReader(localBlobPath))
@@ -1260,48 +1258,52 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             TargetFeedConfig feedConfig)
         {
             string containerId = GetContainerId().Result;
-                        var blobFeedAction = CreateBlobFeedAction(feedConfig);
+            var blobFeedAction = CreateBlobFeedAction(feedConfig);
             var pushOptions = new PushOptions
             {
                 AllowOverwrite = feedConfig.AllowOverwrite,
                 PassIfExistingItemIdentical = true
             };
             string temporaryBlobDirectory =
-                Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
+                Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempBlob"));
             EnsureTemporaryDirectoryExists(temporaryBlobDirectory);
 
-
-           foreach(var blob in blobsToPublish)
-           {
-               var fileName = Path.GetFileName(blob.Id);
-               var localBlobPath = await DownloadFileAsync("PackageArtifacts", containerId,
-                   fileName,
-                   temporaryBlobDirectory);
-
-               if (!File.Exists(localBlobPath))
-               {
-                   Log.LogError(
-                       $"Could not locate '{blob.Id}' at '{localBlobPath}'");
-                   return;
-               }
-
-               blobsToPublish
-                   .ToList()
-                   .ForEach(blob => TryAddAssetLocation(blob.Id, assetVersion: null, buildAssets, feedConfig,
-                       AddAssetLocationToAssetAssetLocationType.Container));
-               IEnumerable<ITaskItem> blobs = new List<ITaskItem>();
-               blobs.ToList().Add(new Microsoft.Build.Utilities.TaskItem(localBlobPath, new Dictionary<string, string>
+            if (Directory.Exists(temporaryBlobDirectory) && !string.IsNullOrEmpty(containerId))
+            {
+                foreach (var blob in blobsToPublish)
                 {
-                    {"RelativeBlobPath", blob.Id}
-                }));
-               await blobFeedAction.PublishToFlatContainerAsync(blobs, maxClients: MaxClients, pushOptions);
-           }
-           if (Log.HasLoggedErrors)
-           {
-               return;
-           }
+                    var fileName = Path.GetFileName(blob.Id);
+                    var localBlobPath = await DownloadFileAsync("BlobArtifacts", containerId,
+                        fileName,
+                        temporaryBlobDirectory);
 
-           if (LinkManager == null)
+                    if (!File.Exists(localBlobPath))
+                    {
+                        Log.LogError(
+                            $"Could not locate '{blob.Id}' at '{localBlobPath}'");
+                        return;
+                    }
+
+                    blobsToPublish
+                        .ToList()
+                        .ForEach(blob => TryAddAssetLocation(blob.Id, assetVersion: null, buildAssets, feedConfig,
+                            AddAssetLocationToAssetAssetLocationType.Container));
+                    IEnumerable<ITaskItem> blobs = new List<ITaskItem>();
+                    blobs.ToList().Add(new Microsoft.Build.Utilities.TaskItem(localBlobPath,
+                        new Dictionary<string, string>
+                        {
+                            {"RelativeBlobPath", blob.Id}
+                        }));
+                    await blobFeedAction.PublishToFlatContainerAsync(blobs, maxClients: MaxClients, pushOptions);
+                }
+
+                if (Log.HasLoggedErrors)
+                {
+                    return;
+                }
+            }
+
+            if (LinkManager == null)
             {
                 LinkManager = new LatestLinksManager(AkaMSClientId, AkaMSClientSecret, AkaMSTenant, AkaMSGroupOwner, AkaMSCreatedBy, AkaMsOwners, Log);
             }
