@@ -101,14 +101,14 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 string temporarySymbolsLocation =
                     Path.GetFullPath(Path.Combine(BlobAssetsBasePath, @"..\", "tempSymbols"));
 
-                EnsureTemporaryDirectoryExists(temporarySymbolsLocation);
+                //EnsureTemporaryDirectoryExists(temporarySymbolsLocation);
 
                 SplitArtifactsInCategories(BuildModel);
-                DeleteTemporaryFiles(temporarySymbolsLocation);
+                //DeleteTemporaryFiles(temporarySymbolsLocation);
 
                 //Copying symbol files to temporary location is required because the symUploader API needs read/write access to the files,
                 //since we publish blobs and symbols in parallel this will cause IO exceptions.
-                CopySymbolFilesToTemporaryLocation(BuildModel, temporarySymbolsLocation);
+                //CopySymbolFilesToTemporaryLocation(BuildModel, temporarySymbolsLocation);
 
                 if (Log.HasLoggedErrors)
                 {
@@ -206,8 +206,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                         SymWebToken, SymbolPublishingExclusionsFile, temporarySymbolsLocation, PublishSpecialClrFiles)
                 });
 
-                DeleteTemporaryFiles(temporarySymbolsLocation);
-                DeleteTemporaryDirectory(temporarySymbolsLocation);
+                //DeleteTemporaryFiles(temporarySymbolsLocation);
+                //DeleteTemporaryDirectory(temporarySymbolsLocation);
                 Log.LogMessage(MessageImportance.High, "Successfully deleted the temporary symbols directory.");
                 await PersistPendingAssetLocationAsync(client);
             }
