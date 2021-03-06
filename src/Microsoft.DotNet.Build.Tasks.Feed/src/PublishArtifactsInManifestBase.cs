@@ -15,6 +15,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using Microsoft.Build.Framework;
 using Microsoft.DotNet.Build.Tasks.Feed.Model;
 using Microsoft.DotNet.Maestro.Client;
@@ -349,7 +350,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         /// <param name="publishSpecialClrFiles">If true, the special coreclr module indexed files like DBI, DAC and SOS are published</param>
         /// <returns></returns>
         public async Task HandleSymbolPublishingAsync(
-            Dictionary<string, HashSet<Asset>> buildAssets,
             string pdbArtifactsBasePath,
             string msdlToken,
             string symWebToken,
@@ -367,16 +367,11 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             string temporarySymbDirectory =
                 Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempSymb"));
             EnsureTemporaryDirectoryExists(temporarySymbDirectory);
-            //var blobs = BlobsByCategory.Select(x => x.Value.ToString().EndsWith(".symbols.nupkg"));
-            HashSet<BlobArtifactModel> blobs = new HashSet<BlobArtifactModel>(); 
-            foreach (var blobsPerCategory in BlobsByCategory)
-            {
-                var blobartifact = blobsPerCategory.Value;
-                var test = blobartifact.Where(x => x.Id.EndsWith(".symbols.nupkg"));
-                blobs.Concat(test);
-            }
+            string path = await DownloadFileAsync("BlobArtifacts", containerId, "MergedManifest.xml", temporarySymbDirectory);
+            HashSet<string> blobs = ParseXmlFile(path);
+            DeleteTemporaryFiles(temporarySymbDirectory);
+
             Log.LogMessage(MessageImportance.High, $"Total number of symbol files : {blobs.Count}");
-            Log.LogMessage(MessageImportance.High, $"Total number of blobs : {BlobsByCategory.Count}");
             HashSet<TargetFeedConfig> feedConfigsForSymbols = FeedConfigs[category];
 
             Dictionary<string, string> serversToPublish =
@@ -396,8 +391,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 foreach (var blob in blobs)
                 {
-                    string fileName = Path.GetFileName(blob.Id);
-                    string localBlobPath = await DownloadFileAsync("BlobArtifacts", containerId, fileName,
+                    string localBlobPath = await DownloadFileAsync("BlobArtifacts", containerId, blob,
                         temporarySymbDirectory);
                     IEnumerable<string> symbolFile = new List<string>();
                     symbolFile.ToList().Add(localBlobPath);
@@ -405,7 +399,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     {
                         var serverPath = server.Key;
                         var token = server.Value;
-                        symbolLog.AppendLine($"Publishing symbol file {blob.Id} to {serverPath}:");
+                        symbolLog.AppendLine($"Publishing symbol file {blob} to {serverPath}:");
 
                         await PublishSymbolsHelper.PublishAsync(
                             Log,
@@ -422,6 +416,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             false,
                             true);
                     }
+                    DeleteTemporaryFiles(temporarySymbDirectory);
                 }
 
                 symbolLog.AppendLine(
@@ -431,6 +426,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 symbolLog.AppendLine();
                 Log.LogMessage(MessageImportance.High, symbolLog.ToString());
                 symbolLog.Clear();
+                DeleteTemporaryDirectory(temporarySymbDirectory);
             }
         }
 
@@ -511,7 +507,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 Log.LogMessage(MessageImportance.High, $"Downloading file in the following path : {localPackagePath}");
 
                 using (var fs = new FileStream(localPackagePath, FileMode.Create,
-                    FileAccess.Write))
+                    FileAccess.Write, FileShare.ReadWrite))
                 {
                     using (var stream = await response.Content.ReadAsStreamAsync())
                     {
@@ -530,22 +526,22 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             }
         }
 
-/*        public void ParseXmlFile()
+        public HashSet<string> ParseXmlFile(string pathToXml)
         {
             XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.Load(@"C:\Users\epananth\Downloads\MergedManifest.xml");
+            xmlDoc.Load(pathToXml);
             XmlNodeList itemsToSign = xmlDoc.GetElementsByTagName("ItemsToSign");
             XmlNodeList package = xmlDoc.GetElementsByTagName("Package");
             XmlNodeList blob = xmlDoc.GetElementsByTagName("Blob");
-            HashSet<string> packageFiles = new HashSet<string>();
+            //HashSet<string> packageFiles = new HashSet<string>();
             HashSet<string> blobFiles = new HashSet<string>();
 
-            for (int i = 0; i < package.Count; i++)
+            /*for (int i = 0; i < package.Count; i++)
             {
                 string fileName = "";
                 fileName = $"{package[i].Attributes["Id"].Value}.{package[i].Attributes["Version"].Value}.nupkg";
                 packageFiles.Add(fileName);
-            }
+            }*/
 
             for (int i = 0; i < blob.Count; i++)
             {
@@ -554,9 +550,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 var fileName = segments[segments.Length - 1];
                 blobFiles.Add(fileName);
             }
-        }*/
+            return blobFiles;
+        }
 
-        // download the package file one by one and then upload it to Azure storage 
 
         public HttpClient CreateHttpClient(HttpClientHandler handler ,string accountName, string projectName = null, string versionOverride = null, string baseAddressSubpath = null)
         {
@@ -682,7 +678,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                                 Log.LogError($"Unknown target feed type for category '{category}': '{feedConfig.Type}'.");
                                 break;
                         }
-                        DeleteTemporaryFiles(temporaryPackageDirectory);
                         DeleteTemporaryDirectory(temporaryPackageDirectory);
                     }
                 }
@@ -923,13 +918,14 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
                             await PushNugetPackageAsync(feed, httpClient, localPackagePath, package.Id, package.Version,
                                 feedAccount, feedVisibility, feedName);
+                            DeleteTemporaryFiles(temporaryPackageDirectory);
                     });
             }
             else
             {
                 Log.LogError($"Temporary directory is {temporaryPackageDirectory} and ContainerId is {containerId} ");
             }
-            DeleteTemporaryFiles(temporaryPackageDirectory);
+
         }
         private async Task PublishPackagesToAzDoNugetFeedAsync(
             HashSet<PackageArtifactModel> packagesToPublish,
@@ -1306,6 +1302,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             AddAssetLocationToAssetAssetLocationType.Container);
 
                     await blobFeedAction.PublishToFlatContainerOneByOneAsync(blobArtifact, maxClients: MaxClients, pushOptions);
+                    DeleteTemporaryFiles(temporaryBlobDirectory);
                 }
 
                 if (Log.HasLoggedErrors)
@@ -1317,7 +1314,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 Log.LogError( $"Temp Blob Directory does not exists {temporaryBlobDirectory}");
             }
-
+            DeleteTemporaryDirectory(temporaryBlobDirectory);
             if (LinkManager == null)
             {
                 LinkManager = new LatestLinksManager(AkaMSClientId, AkaMSClientSecret, AkaMSTenant, AkaMSGroupOwner, AkaMSCreatedBy, AkaMsOwners, Log);
