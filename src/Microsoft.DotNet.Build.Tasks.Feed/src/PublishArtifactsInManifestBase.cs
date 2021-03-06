@@ -20,6 +20,7 @@ using Microsoft.DotNet.Build.Tasks.Feed.Model;
 using Microsoft.DotNet.Maestro.Client;
 using Microsoft.DotNet.Maestro.Client.Models;
 using Microsoft.DotNet.VersionTools.BuildManifest.Model;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Newtonsoft.Json;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
@@ -367,8 +368,15 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempSymb"));
             EnsureTemporaryDirectoryExists(temporarySymbDirectory);
             //var blobs = BlobsByCategory.Select(x => x.Value.ToString().EndsWith(".symbols.nupkg"));
-            HashSet<BlobArtifactModel> blobs = (HashSet<BlobArtifactModel>)BlobsByCategory.Select(x => x.Value.ToString().EndsWith(".symbols.nupkg")); 
-
+            HashSet<BlobArtifactModel> blobs = new HashSet<BlobArtifactModel>(); 
+            foreach (var blobsPerCategory in BlobsByCategory)
+            {
+                var blobartifact = blobsPerCategory.Value;
+                var test = blobartifact.Where(x => x.Id.EndsWith("symbols.nukg"));
+                blobs.Concat(test);
+            }
+            Log.LogMessage(MessageImportance.High, $"Total number of symbol files : {blobs.Count}");
+            Log.LogMessage(MessageImportance.High, $"Total number of blobs : {BlobsByCategory.Count}");
             HashSet<TargetFeedConfig> feedConfigsForSymbols = FeedConfigs[category];
 
             Dictionary<string, string> serversToPublish =
@@ -459,7 +467,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 {
                     string uri =
                         $"{AzureDevOpsBaseUrl}/{AzureDevOpsOrg}/{AzureProject}/_apis/build/builds/{BuildId}/artifacts?api-version={AzureDevOpsFeedsApiVersion}";
-                    Log.LogMessage(MessageImportance.High, $"Uri to download container id : {uri}");
                     HttpRequestMessage getMessage = new HttpRequestMessage(HttpMethod.Get, uri);
                     HttpResponseMessage response = await client.SendAsync(getMessage);
                     response.EnsureSuccessStatusCode();
@@ -472,7 +479,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                         {
                             string[] segment = bd.resource.data.Split('/');
                             containerId = segment[1];
-                            Log.LogMessage(MessageImportance.High, $"ContainerId : {containerId}");
                             break;
                         }
                     }
@@ -555,7 +561,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         {
 
             string address = $"https://{baseAddressSubpath}dev.azure.com/{accountName}/";
-            Log.LogMessage(MessageImportance.High, $"Address : {address} , ProjectName : {projectName}");
             if (!string.IsNullOrEmpty(projectName))
             {
                 address += $"{projectName}/";
@@ -767,6 +772,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             };
         }
 
+
         /// <summary>
         ///     Split the artifacts into categories.
         ///     
@@ -913,13 +919,12 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             await PushNugetPackageAsync(feed, httpClient, localPackagePath, package.Id, package.Version,
                                 feedAccount, feedVisibility, feedName);
                     });
-                DeleteTemporaryFiles(temporaryPackageDirectory);
-
             }
             else
             {
                 Log.LogError($"Temporary directory is {temporaryPackageDirectory} and ContainerId is {containerId} ");
             }
+            DeleteTemporaryFiles(temporaryPackageDirectory);
             DeleteTemporaryDirectory(temporaryPackageDirectory);
         }
         private async Task PublishPackagesToAzDoNugetFeedAsync(
@@ -1284,22 +1289,29 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             $"Could not locate '{blob.Id}' at '{localBlobPath}'");
                         return;
                     }
-
-                    TryAddAssetLocation(blob.Id, assetVersion: null, buildAssets, feedConfig,
-                            AddAssetLocationToAssetAssetLocationType.Container);
                     IEnumerable<ITaskItem> blobs = new List<ITaskItem>();
-                    blobs.ToList().Add(new Microsoft.Build.Utilities.TaskItem(localBlobPath,
+
+                    blobs.ToList().Add(new Microsoft.Build.Utilities.TaskItem(
+                        localBlobPath,
                         new Dictionary<string, string>
                         {
                             {"RelativeBlobPath", blob.Id}
                         }));
+
+                    TryAddAssetLocation(blob.Id, assetVersion: null, buildAssets, feedConfig,
+                            AddAssetLocationToAssetAssetLocationType.Container);
+
                     await blobFeedAction.PublishToFlatContainerAsync(blobs, maxClients: MaxClients, pushOptions);
                 }
 
                 if (Log.HasLoggedErrors)
                 {
-                    return;
+                    Log.LogError( $"Error happened in blob publishing");
                 }
+            }
+            else
+            {
+                Log.LogError( $"Temp Blob Directory does not exists {temporaryBlobDirectory}");
             }
 
             if (LinkManager == null)
