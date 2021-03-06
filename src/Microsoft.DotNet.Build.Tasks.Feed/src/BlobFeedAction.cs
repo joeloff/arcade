@@ -140,6 +140,14 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             }
         }
 
+        public async Task PublishToFlatContainerOneByOneAsync(ITaskItem taskItems, int maxClients, PushOptions pushOptions)
+        {
+            using (var clientThrottle = new SemaphoreSlim(maxClients, maxClients))
+            {
+                await System.Threading.Tasks.Task.Run(() => (UploadAssetAsync(taskItems, clientThrottle, pushOptions)));
+            }
+        }
+
         public async Task UploadAssetAsync(
             ITaskItem item,
             SemaphoreSlim clientThrottle,

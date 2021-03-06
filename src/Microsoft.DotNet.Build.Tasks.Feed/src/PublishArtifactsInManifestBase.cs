@@ -372,7 +372,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             foreach (var blobsPerCategory in BlobsByCategory)
             {
                 var blobartifact = blobsPerCategory.Value;
-                var test = blobartifact.Where(x => x.Id.EndsWith("symbols.nukg"));
+                var test = blobartifact.Where(x => x.Id.EndsWith(".symbols.nupkg"));
                 blobs.Concat(test);
             }
             Log.LogMessage(MessageImportance.High, $"Total number of symbol files : {blobs.Count}");
@@ -517,6 +517,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     {
                         {
                             await stream.CopyToAsync(fs);
+                            fs.Close();
                         }
                     }
                 }
@@ -665,11 +666,14 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             string shippingString = package.NonShipping ? "NonShipping" : "Shipping";
                             Log.LogMessage(MessageImportance.High, $"Package {package.Id}@{package.Version} ({shippingString}) should go to {feedConfig.TargetURL} ({isolatedString}{internalString})");
                         }
+                        string temporaryPackageDirectory =
+                            Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
+                        EnsureTemporaryDirectoryExists(temporaryPackageDirectory);
 
                         switch (feedConfig.Type)
                         {
                             case FeedType.AzDoNugetFeed:
-                                publishTasks.Add(PublishPackagesToAzDoNugetFeedAsyncOneByOne(filteredPackages, buildAssets, feedConfig));
+                                publishTasks.Add(PublishPackagesToAzDoNugetFeedAsyncOneByOne(filteredPackages, buildAssets, feedConfig, temporaryPackageDirectory));
                                 break;
                             case FeedType.AzureStorageFeed:
                                 publishTasks.Add(HandlePackagePublishingOneByOneAsync(filteredPackages, buildAssets, feedConfig));
@@ -678,6 +682,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                                 Log.LogError($"Unknown target feed type for category '{category}': '{feedConfig.Type}'.");
                                 break;
                         }
+                        DeleteTemporaryFiles(temporaryPackageDirectory);
+                        DeleteTemporaryDirectory(temporaryPackageDirectory);
                     }
                 }
                 else
@@ -889,12 +895,11 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         private async Task PublishPackagesToAzDoNugetFeedAsyncOneByOne(
             HashSet<PackageArtifactModel> packagesToPublish,
             Dictionary<string, HashSet<Asset>> buildAssets,
-            TargetFeedConfig feedConfig)
+            TargetFeedConfig feedConfig,
+            string temporaryPackageDirectory)
         {
             string containerId = GetContainerId().Result;
-            string temporaryPackageDirectory =
-                Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
-            EnsureTemporaryDirectoryExists(temporaryPackageDirectory);
+
             if (Directory.Exists(temporaryPackageDirectory) && !string.IsNullOrEmpty(containerId))
             {
                 await PushNugetPackagesAsync(packagesToPublish, feedConfig, maxClients: MaxClients,
@@ -925,7 +930,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 Log.LogError($"Temporary directory is {temporaryPackageDirectory} and ContainerId is {containerId} ");
             }
             DeleteTemporaryFiles(temporaryPackageDirectory);
-            DeleteTemporaryDirectory(temporaryPackageDirectory);
         }
         private async Task PublishPackagesToAzDoNugetFeedAsync(
             HashSet<PackageArtifactModel> packagesToPublish,
@@ -1289,19 +1293,19 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             $"Could not locate '{blob.Id}' at '{localBlobPath}'");
                         return;
                     }
-                    IEnumerable<ITaskItem> blobs = new List<ITaskItem>();
+                    
 
-                    blobs.ToList().Add(new Microsoft.Build.Utilities.TaskItem(
-                        localBlobPath,
+                    var blobArtifact = new Microsoft.Build.Utilities.TaskItem(
+                        localBlobPath, 
                         new Dictionary<string, string>
-                        {
-                            {"RelativeBlobPath", blob.Id}
-                        }));
+                    {
+                        {"RelativeBlobPath", blob.Id}
+                    });
 
                     TryAddAssetLocation(blob.Id, assetVersion: null, buildAssets, feedConfig,
                             AddAssetLocationToAssetAssetLocationType.Container);
 
-                    await blobFeedAction.PublishToFlatContainerAsync(blobs, maxClients: MaxClients, pushOptions);
+                    await blobFeedAction.PublishToFlatContainerOneByOneAsync(blobArtifact, maxClients: MaxClients, pushOptions);
                 }
 
                 if (Log.HasLoggedErrors)
