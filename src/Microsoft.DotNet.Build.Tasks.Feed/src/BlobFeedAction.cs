@@ -199,7 +199,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 else
                 {
                     using (FileStream stream =
-                        new FileStream(item.ItemSpec, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        new FileStream(item.ItemSpec, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
                         Log.LogMessage($"Uploading {item} to {relativeBlobPath}.");
                         await blobUtils.UploadBlockBlobAsync(item.ItemSpec, relativeBlobPath, stream);

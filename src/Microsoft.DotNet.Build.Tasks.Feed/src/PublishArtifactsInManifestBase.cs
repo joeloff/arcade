@@ -504,7 +504,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 response.EnsureSuccessStatusCode();
 
                 string localPackagePath = Path.Combine(tempStagingDirectory, fileName);
-                Log.LogMessage(MessageImportance.High, $"Downloading file in the following path : {localPackagePath}");
 
                 using (var fs = new FileStream(localPackagePath, FileMode.Create,
                     FileAccess.Write, FileShare.ReadWrite))
@@ -513,11 +512,11 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     {
                         {
                             await stream.CopyToAsync(fs);
+                            fs.Flush();
                             fs.Close();
                         }
                     }
                 }
-                Log.LogMessage(MessageImportance.High, $"File has been successfully downloaded");
                 response.Dispose();
                 getMessage.Dispose();
                 handler.Dispose();
