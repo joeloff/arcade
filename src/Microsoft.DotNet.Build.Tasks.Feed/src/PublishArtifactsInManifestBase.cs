@@ -884,7 +884,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 if (Directory.Exists(temporaryLocation) && File.Exists(Path.Combine(temporaryLocation, fileName)))
                 {
-                    File.Delete(Path.Combine(temporaryLocation, fileName));
+                    string path = Path.GetFullPath(Path.Combine(temporaryLocation, fileName)); 
+                    Log.LogMessage($"Going to delete the following file {path}"   );
+                    File.Delete(Path.GetFullPath(Path.Combine(temporaryLocation, fileName)));
                 }
             }
             catch (Exception ex)
