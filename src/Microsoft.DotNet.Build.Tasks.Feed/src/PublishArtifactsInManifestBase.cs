@@ -917,29 +917,50 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
             if (Directory.Exists(temporaryPackageDirectory) && !string.IsNullOrEmpty(containerId))
             {
-                await PushNugetPackagesAsync(packagesToPublish, feedConfig, maxClients: MaxClients,
+            /*    await PushNugetPackagesAsync(packagesToPublish, feedConfig, maxClients: MaxClients,
                     async (feed, httpClient, package, feedAccount, feedVisibility, feedName) =>
-                    {
-                        var packageFilename = $"{package.Id}.{package.Version}.nupkg";
-                            string localPackagePath = "";
-                            localPackagePath = await DownloadFileAsync("PackageArtifacts", containerId,
-                                packageFilename,
-                                temporaryPackageDirectory);
-                            
-                            if (!File.Exists(localPackagePath))
-                            {
-                                Log.LogError(
-                                    $"Could not locate '{package.Id}.{package.Version}' at '{localPackagePath}'");
-                                return;
-                            }
+                    {*/
+               foreach (var package in packagesToPublish)
+               {
+                   var packageFilename = $"{package.Id}.{package.Version}.nupkg";
+                   string localPackagePath = "";
+                   localPackagePath = await DownloadFileAsync("PackageArtifacts", containerId,
+                       packageFilename,
+                       temporaryPackageDirectory);
 
-                            TryAddAssetLocation(package.Id, package.Version, buildAssets, feedConfig,
-                                AddAssetLocationToAssetAssetLocationType.NugetFeed);
+                   if (!File.Exists(localPackagePath))
+                   {
+                       Log.LogError(
+                           $"Could not locate '{package.Id}.{package.Version}' at '{localPackagePath}'");
+                       return;
+                   }
 
-                            await PushNugetPackageAsync(feed, httpClient, localPackagePath, package.Id, package.Version,
-                                feedAccount, feedVisibility, feedName);
-                            DeleteTemporaryFile(temporaryPackageDirectory,localPackagePath);
-                    });
+                   TryAddAssetLocation(package.Id, package.Version, buildAssets, feedConfig,
+                       AddAssetLocationToAssetAssetLocationType.NugetFeed);
+
+                   var parsedUri = Regex.Match(feedConfig.TargetURL, PublishingConstants.AzDoNuGetFeedPattern);
+                   if (!parsedUri.Success)
+                   {
+                       Log.LogError(
+                           $"Azure DevOps NuGetFeed was not in the expected format '{PublishingConstants.AzDoNuGetFeedPattern}'");
+                       return;
+                   }
+
+                   string feedAccount = parsedUri.Groups["account"].Value;
+                   string feedVisibility = parsedUri.Groups["visibility"].Value;
+                   string feedName = parsedUri.Groups["feed"].Value;
+                   using (HttpClient httpClient = new HttpClient(new HttpClientHandler { CheckCertificateRevocationList = true }))
+                   {
+                       httpClient.Timeout = TimeSpan.FromSeconds(180);
+                       httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                           "Basic",
+                           Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "", feedConfig.Token))));
+                                await PushNugetPackageAsync(feedConfig, httpClient, localPackagePath, package.Id, package.Version,
+                           feedAccount, feedVisibility, feedName);
+                   }
+
+                   DeleteTemporaryFile(temporaryPackageDirectory, localPackagePath);
+               }
             }
             else
             {
