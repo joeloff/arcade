@@ -936,7 +936,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
                             await PushNugetPackageAsync(feed, httpClient, localPackagePath, package.Id, package.Version,
                                 feedAccount, feedVisibility, feedName);
-                            DeleteTemporaryFiles(temporaryPackageDirectory);
+                            DeleteTemporaryFile(temporaryPackageDirectory,localPackagePath);
                     });
             }
             else
@@ -1320,7 +1320,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             AddAssetLocationToAssetAssetLocationType.Container);
 
                     await blobFeedAction.PublishToFlatContainerOneByOneAsync(blobArtifact, maxClients: MaxClients, pushOptions);
-                    DeleteTemporaryFile(temporaryBlobDirectory, fileName);
+                    DeleteTemporaryFiles(temporaryBlobDirectory);
                 }
 
                 if (Log.HasLoggedErrors)
