@@ -616,7 +616,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             AddAssetLocationToAssetAssetLocationType.NugetFeed));
 
                     await blobFeedAction.PushToFeedAsync(test, pushOptions);
-                    DeleteTemporaryFiles(temporaryPackageDirectory);
+                    DeleteTemporaryFile(temporaryPackageDirectory, packageFilename);
                 }
                 if (Log.HasLoggedErrors)
                 {
@@ -866,6 +866,25 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     {
                         File.Delete(file);
                     }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.LogWarning(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Delete the files after publishing, this is part of cleanup
+        /// </summary>
+        /// <param name="temporaryLocation"></param>
+        public void DeleteTemporaryFile(string temporaryLocation, string fileName)
+        {
+            try
+            {
+                if (Directory.Exists(temporaryLocation) && File.Exists(Path.Combine(temporaryLocation, fileName)))
+                {
+                    File.Delete(Path.Combine(temporaryLocation, fileName));
                 }
             }
             catch (Exception ex)
@@ -1301,7 +1320,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             AddAssetLocationToAssetAssetLocationType.Container);
 
                     await blobFeedAction.PublishToFlatContainerOneByOneAsync(blobArtifact, maxClients: MaxClients, pushOptions);
-                    DeleteTemporaryFiles(temporaryBlobDirectory);
+                    DeleteTemporaryFile(temporaryBlobDirectory, fileName);
                 }
 
                 if (Log.HasLoggedErrors)
