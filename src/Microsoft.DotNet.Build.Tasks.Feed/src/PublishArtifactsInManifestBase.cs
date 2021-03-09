@@ -870,14 +870,14 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         /// <summary>
         /// Delete the files after publishing, this is part of cleanup
         /// </summary>
-        /// <param name="temporaryLocation"></param>
+        /// <param name="filePath"></param>
         public void DeleteTemporaryFile(string filePath)
         {
             try
             {
                 if (File.Exists(filePath))
                 {
-                    Log.LogMessage($"Going to delete the following file {filePath}"   );
+                    Log.LogMessage($"Going to delete the following file {filePath}");
                     File.Delete(filePath);
                 }
             }
@@ -961,7 +961,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 Log.LogError($"Temporary directory is {temporaryPackageDirectory} and ContainerId is {containerId} ");
             }
-            DeleteTemporaryDirectory(temporaryPackageDirectory);
         }
         private async Task PublishPackagesToAzDoNugetFeedAsync(
             HashSet<PackageArtifactModel> packagesToPublish,
@@ -1199,7 +1198,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
                             await PushNugetPackageAsync(feed, httpClient, localBlobPath, id, version, feedAccount,
                                 feedVisibility, feedName);
-                            DeleteTemporaryFiles(temporaryBlobDirectory);
+                            DeleteTemporaryFile(localBlobPath);
                         }
                     });
             }
@@ -1338,7 +1337,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             AddAssetLocationToAssetAssetLocationType.Container);
 
                     await blobFeedAction.PublishToFlatContainerOneByOneAsync(blobArtifact, maxClients: MaxClients, pushOptions);
-                    DeleteTemporaryFiles(temporaryBlobDirectory);
+                    DeleteTemporaryFile(localBlobPath);
                 }
 
                 if (Log.HasLoggedErrors)
@@ -1350,7 +1349,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 Log.LogError( $"Temp Blob Directory does not exists {temporaryBlobDirectory}");
             }
-            DeleteTemporaryDirectory(temporaryBlobDirectory);
             if (LinkManager == null)
             {
                 LinkManager = new LatestLinksManager(AkaMSClientId, AkaMSClientSecret, AkaMSTenant, AkaMSGroupOwner, AkaMSCreatedBy, AkaMsOwners, Log);
