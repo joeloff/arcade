@@ -962,6 +962,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 Log.LogError($"Temporary directory is {temporaryPackageDirectory} and ContainerId is {containerId} ");
             }
+
+            DeleteTemporaryFiles(temporaryPackageDirectory);
+            DeleteTemporaryDirectory(temporaryPackageDirectory);
         }
         private async Task PublishPackagesToAzDoNugetFeedAsync(
             HashSet<PackageArtifactModel> packagesToPublish,
@@ -1340,7 +1343,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     await blobFeedAction.PublishToFlatContainerOneByOneAsync(blobArtifact, maxClients: MaxClients, pushOptions);
                     DeleteTemporaryFile(localBlobPath);
                 }
-
+                DeleteTemporaryFiles(temporaryBlobDirectory);
+                DeleteTemporaryDirectory(temporaryBlobDirectory);
                 if (Log.HasLoggedErrors)
                 {
                     Log.LogError( $"Error happened in blob publishing");
