@@ -547,7 +547,10 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 var blobLocation = blob[i].Attributes["Id"].Value.ToString();
                 var segments = blobLocation.Split('/');
                 var fileName = segments[segments.Length - 1];
-                blobFiles.Add(fileName);
+                if (fileName.Contains(".symbols.nupkg"))
+                {
+                    blobFiles.Add(fileName);
+                }
             }
             return blobFiles;
         }
