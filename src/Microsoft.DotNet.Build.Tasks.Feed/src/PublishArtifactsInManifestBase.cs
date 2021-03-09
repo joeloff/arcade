@@ -487,7 +487,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             }
         }
 
-        public async Task<string> DownloadFileAsync(string artifact, string containerId, string fileName, string tempStagingDirectory)
+        public async Task<string> DownloadFileAsync(string artifact, string containerId, string fileName, string tempDirectory)
         {
             using HttpClientHandler handler = new HttpClientHandler()
             {
@@ -503,8 +503,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 HttpResponseMessage response = await client.SendAsync(getMessage);
                 response.EnsureSuccessStatusCode();
 
-                string localPackagePath = Path.Combine(tempStagingDirectory, fileName);
-
+                string localPackagePath = Path.Combine(tempDirectory, fileName);
+                Log.LogMessage($"LocalPath to downloaded file {localPackagePath}");
                 using (var fs = new FileStream(localPackagePath, FileMode.Create,
                     FileAccess.Write, FileShare.ReadWrite))
                 {
@@ -517,8 +517,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                         }
                     }
                 }
-                response.Dispose();
                 getMessage.Dispose();
+                response.Dispose();
                 handler.Dispose();
                 client.Dispose();
                 return localPackagePath;
@@ -597,8 +597,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 foreach (var package in packagesToPublish)
                 {
                     var packageFilename = $"{package.Id}.{package.Version}.nupkg";
-                    string localPackagePath = "";
-                    localPackagePath = await DownloadFileAsync("PackageArtifacts", containerId, packageFilename,
+                    string localPackagePath = await DownloadFileAsync("PackageArtifacts", containerId, packageFilename,
                         temporaryPackageDirectory);
 
                     if (!File.Exists(localPackagePath))
@@ -610,10 +609,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
                     IEnumerable<string> test = new List<string>();
                     test.ToList().Add(localPackagePath);
-                    packagesToPublish
-                        .ToList()
-                        .ForEach(package => TryAddAssetLocation(package.Id, package.Version, buildAssets, feedConfig,
-                            AddAssetLocationToAssetAssetLocationType.NugetFeed));
+                    TryAddAssetLocation(package.Id, package.Version, buildAssets, feedConfig,
+                            AddAssetLocationToAssetAssetLocationType.NugetFeed);
 
                     await blobFeedAction.PushToFeedAsync(test, pushOptions);
                     DeleteTemporaryFile(temporaryPackageDirectory, packageFilename);
@@ -661,14 +658,11 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             string shippingString = package.NonShipping ? "NonShipping" : "Shipping";
                             Log.LogMessage(MessageImportance.High, $"Package {package.Id}@{package.Version} ({shippingString}) should go to {feedConfig.TargetURL} ({isolatedString}{internalString})");
                         }
-                        string temporaryPackageDirectory =
-                            Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
-                        EnsureTemporaryDirectoryExists(temporaryPackageDirectory);
 
                         switch (feedConfig.Type)
                         {
                             case FeedType.AzDoNugetFeed:
-                                publishTasks.Add(PublishPackagesToAzDoNugetFeedAsyncOneByOne(filteredPackages, buildAssets, feedConfig, temporaryPackageDirectory));
+                                publishTasks.Add(PublishPackagesToAzDoNugetFeedAsyncOneByOne(filteredPackages, buildAssets, feedConfig));
                                 break;
                             case FeedType.AzureStorageFeed:
                                 publishTasks.Add(HandlePackagePublishingOneByOneAsync(filteredPackages, buildAssets, feedConfig));
@@ -677,7 +671,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                                 Log.LogError($"Unknown target feed type for category '{category}': '{feedConfig.Type}'.");
                                 break;
                         }
-                        DeleteTemporaryDirectory(temporaryPackageDirectory);
                     }
                 }
                 else
@@ -910,10 +903,24 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         private async Task PublishPackagesToAzDoNugetFeedAsyncOneByOne(
             HashSet<PackageArtifactModel> packagesToPublish,
             Dictionary<string, HashSet<Asset>> buildAssets,
-            TargetFeedConfig feedConfig,
-            string temporaryPackageDirectory)
+            TargetFeedConfig feedConfig)
         {
             string containerId = GetContainerId().Result;
+            var parsedUri = Regex.Match(feedConfig.TargetURL, PublishingConstants.AzDoNuGetFeedPattern);
+            if (!parsedUri.Success)
+            {
+                Log.LogError(
+                    $"Azure DevOps NuGetFeed was not in the expected format '{PublishingConstants.AzDoNuGetFeedPattern}'");
+                return;
+            }
+
+            string feedAccount = parsedUri.Groups["account"].Value;
+            string feedVisibility = parsedUri.Groups["visibility"].Value;
+            string feedName = parsedUri.Groups["feed"].Value;
+
+            string temporaryPackageDirectory =
+                Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage"));
+            EnsureTemporaryDirectoryExists(temporaryPackageDirectory);
 
             if (Directory.Exists(temporaryPackageDirectory) && !string.IsNullOrEmpty(containerId))
             {
@@ -923,8 +930,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                foreach (var package in packagesToPublish)
                {
                    var packageFilename = $"{package.Id}.{package.Version}.nupkg";
-                   string localPackagePath = "";
-                   localPackagePath = await DownloadFileAsync("PackageArtifacts", containerId,
+                   string localPackagePath = await DownloadFileAsync("PackageArtifacts", containerId,
                        packageFilename,
                        temporaryPackageDirectory);
 
@@ -938,17 +944,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                    TryAddAssetLocation(package.Id, package.Version, buildAssets, feedConfig,
                        AddAssetLocationToAssetAssetLocationType.NugetFeed);
 
-                   var parsedUri = Regex.Match(feedConfig.TargetURL, PublishingConstants.AzDoNuGetFeedPattern);
-                   if (!parsedUri.Success)
-                   {
-                       Log.LogError(
-                           $"Azure DevOps NuGetFeed was not in the expected format '{PublishingConstants.AzDoNuGetFeedPattern}'");
-                       return;
-                   }
 
-                   string feedAccount = parsedUri.Groups["account"].Value;
-                   string feedVisibility = parsedUri.Groups["visibility"].Value;
-                   string feedName = parsedUri.Groups["feed"].Value;
                    using (HttpClient httpClient = new HttpClient(new HttpClientHandler { CheckCertificateRevocationList = true }))
                    {
                        httpClient.Timeout = TimeSpan.FromSeconds(180);
@@ -959,14 +955,14 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                            feedAccount, feedVisibility, feedName);
                    }
 
-                   DeleteTemporaryFile(temporaryPackageDirectory, localPackagePath);
+                   DeleteTemporaryFiles(temporaryPackageDirectory);
                }
             }
             else
             {
                 Log.LogError($"Temporary directory is {temporaryPackageDirectory} and ContainerId is {containerId} ");
             }
-
+            DeleteTemporaryDirectory(temporaryPackageDirectory);
         }
         private async Task PublishPackagesToAzDoNugetFeedAsync(
             HashSet<PackageArtifactModel> packagesToPublish,
