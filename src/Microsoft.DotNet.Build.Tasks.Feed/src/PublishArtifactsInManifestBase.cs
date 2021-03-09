@@ -426,8 +426,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 symbolLog.AppendLine();
                 Log.LogMessage(MessageImportance.High, symbolLog.ToString());
                 symbolLog.Clear();
-                DeleteTemporaryFiles(temporarySymbDirectory);
-                DeleteTemporaryDirectory(temporarySymbDirectory);
+                DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempSymb")));
             }
         }
 
@@ -672,6 +671,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                                 Log.LogError($"Unknown target feed type for category '{category}': '{feedConfig.Type}'.");
                                 break;
                         }
+
+                        DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage")));
                     }
                 }
                 else
@@ -735,6 +736,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                                 Log.LogError($"Unknown target feed type for category '{category}': '{feedConfig.Type}'.");
                                 break;
                         }
+
+                        DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempBlob")));
                     }
                 }
                 else
@@ -962,9 +965,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 Log.LogError($"Temporary directory is {temporaryPackageDirectory} and ContainerId is {containerId} ");
             }
-
-            DeleteTemporaryFiles(temporaryPackageDirectory);
-            DeleteTemporaryDirectory(temporaryPackageDirectory);
         }
         private async Task PublishPackagesToAzDoNugetFeedAsync(
             HashSet<PackageArtifactModel> packagesToPublish,
@@ -1343,8 +1343,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     await blobFeedAction.PublishToFlatContainerOneByOneAsync(blobArtifact, maxClients: MaxClients, pushOptions);
                     DeleteTemporaryFile(localBlobPath);
                 }
-                DeleteTemporaryFiles(temporaryBlobDirectory);
-                DeleteTemporaryDirectory(temporaryBlobDirectory);
                 if (Log.HasLoggedErrors)
                 {
                     Log.LogError( $"Error happened in blob publishing");
