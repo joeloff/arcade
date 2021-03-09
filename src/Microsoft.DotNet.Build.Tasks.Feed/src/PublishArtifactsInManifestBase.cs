@@ -416,7 +416,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             false,
                             true);
                     }
-                    DeleteTemporaryFiles(temporarySymbDirectory);
+                    DeleteTemporaryFile(localBlobPath);
                 }
 
                 symbolLog.AppendLine(
@@ -426,6 +426,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 symbolLog.AppendLine();
                 Log.LogMessage(MessageImportance.High, symbolLog.ToString());
                 symbolLog.Clear();
+                DeleteTemporaryFiles(temporarySymbDirectory);
                 DeleteTemporaryDirectory(temporarySymbDirectory);
             }
         }
@@ -498,7 +499,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 string uri =
                     $"{AzureDevOpsBaseUrl}/{AzureDevOpsOrg}/_apis/resources/Containers/{containerId}?itemPath=/{artifact}/{fileName}&isShallow=true&api-version={AzureApiVersionForFileDownload}";
-                Log.LogMessage(MessageImportance.High, $"download file uri = {uri}");
+                Log.LogMessage( $"download file uri = {uri}");
                 HttpRequestMessage getMessage = new HttpRequestMessage(HttpMethod.Get, uri);
                 HttpResponseMessage response = await client.SendAsync(getMessage);
                 response.EnsureSuccessStatusCode();
