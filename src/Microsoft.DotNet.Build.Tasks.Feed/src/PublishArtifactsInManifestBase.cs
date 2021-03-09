@@ -613,7 +613,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             AddAssetLocationToAssetAssetLocationType.NugetFeed);
 
                     await blobFeedAction.PushToFeedAsync(test, pushOptions);
-                    DeleteTemporaryFile(temporaryPackageDirectory, packageFilename);
+                    DeleteTemporaryFile(localPackagePath);
                 }
                 if (Log.HasLoggedErrors)
                 {
@@ -871,15 +871,14 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         /// Delete the files after publishing, this is part of cleanup
         /// </summary>
         /// <param name="temporaryLocation"></param>
-        public void DeleteTemporaryFile(string temporaryLocation, string fileName)
+        public void DeleteTemporaryFile(string filePath)
         {
             try
             {
-                if (Directory.Exists(temporaryLocation) && File.Exists(Path.Combine(temporaryLocation, fileName)))
+                if (File.Exists(filePath))
                 {
-                    string path = Path.GetFullPath(Path.Combine(temporaryLocation, fileName)); 
-                    Log.LogMessage($"Going to delete the following file {path}"   );
-                    File.Delete(Path.GetFullPath(Path.Combine(temporaryLocation, fileName)));
+                    Log.LogMessage($"Going to delete the following file {filePath}"   );
+                    File.Delete(filePath);
                 }
             }
             catch (Exception ex)
@@ -955,7 +954,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                            feedAccount, feedVisibility, feedName);
                    }
 
-                   DeleteTemporaryFiles(temporaryPackageDirectory);
+                   DeleteTemporaryFile(packageFilename);
                }
             }
             else
