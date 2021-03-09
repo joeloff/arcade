@@ -954,7 +954,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                            feedAccount, feedVisibility, feedName);
                    }
 
-                   DeleteTemporaryFile(packageFilename);
+                   DeleteTemporaryFile(localPackagePath);
                }
             }
             else
