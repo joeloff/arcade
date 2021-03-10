@@ -478,10 +478,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             break;
                         }
                     }
-                    handler.Dispose();
-                    client.Dispose();
-                    response.Dispose();
-                    handler.Dispose();
                     return containerId;
                 }
             }
@@ -517,10 +513,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                         }
                     }
                 }
-                getMessage.Dispose();
-                response.Dispose();
-                handler.Dispose();
-                client.Dispose();
                 return localPackagePath;
             }
         }
@@ -625,9 +617,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             }
             else
             {
-                Log.LogError($"Temporary directory {temporaryPackageDirectory} & ContainerId {containerId} ");
+                Log.LogError($"Package directory {temporaryPackageDirectory} does not exists");
             }
-            DeleteTemporaryDirectory(temporaryPackageDirectory);
         }
 
         /// <summary>
