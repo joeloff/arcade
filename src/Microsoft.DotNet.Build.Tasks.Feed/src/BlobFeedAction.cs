@@ -1,23 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.DotNet.Build.CloudTestTasks;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using Sleet;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using MSBuild = Microsoft.Build.Utilities;
 
 namespace Microsoft.DotNet.Build.Tasks.Feed
@@ -203,6 +201,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     {
                         Log.LogMessage($"Uploading {item} to {relativeBlobPath}.");
                         await blobUtils.UploadBlockBlobAsync(item.ItemSpec, relativeBlobPath, stream);
+                        Log.LogMessage($"Successfully uploaded {item} to {relativeBlobPath}.");
                     }
                 }
             }
