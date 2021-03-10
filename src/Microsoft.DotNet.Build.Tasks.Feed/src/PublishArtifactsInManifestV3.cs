@@ -208,6 +208,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
                 //DeleteTemporaryFiles(temporarySymbolsLocation);
                 //DeleteTemporaryDirectory(temporarySymbolsLocation);
+                DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage")));
+                DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempBlob")));
+                DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempSymb")));
                 Log.LogMessage(MessageImportance.High, "Successfully deleted the temporary symbols directory.");
                 await PersistPendingAssetLocationAsync(client);
             }

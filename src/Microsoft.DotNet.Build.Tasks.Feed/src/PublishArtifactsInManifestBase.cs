@@ -681,9 +681,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     Log.LogError($"No target feed configuration found for artifact category: '{category}'.");
                 }
             }
-
             await Task.WhenAll(publishTasks);
-            DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage")));
         }
 
         private HashSet<PackageArtifactModel> FilterPackages(HashSet<PackageArtifactModel> packages, TargetFeedConfig feedConfig)
@@ -748,7 +746,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             }
 
             await Task.WhenAll(publishTasks);
-            DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempBlob")));
         }
 
         /// <summary>
