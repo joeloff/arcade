@@ -422,7 +422,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 symbolLog.AppendLine(
                     $"Performing symbol publishing... \nExpirationInDays : {ExpirationInDays} \nConvertPortablePdbsToWindowsPdb : false \ndryRun: false ");
                 symbolLog.Append($"\nTotal number of symbol files : {blobs.Count}");
-                symbolLog.AppendLine("Successfully published to Symbol Server.");
+                symbolLog.AppendLine("\nSuccessfully published to Symbol Server.");
                 symbolLog.AppendLine();
                 Log.LogMessage(MessageImportance.High, symbolLog.ToString());
                 symbolLog.Clear();
@@ -674,8 +674,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                                 Log.LogError($"Unknown target feed type for category '{category}': '{feedConfig.Type}'.");
                                 break;
                         }
-
-                        DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage")));
                     }
                 }
                 else
@@ -685,6 +683,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             }
 
             await Task.WhenAll(publishTasks);
+            DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempPackage")));
         }
 
         private HashSet<PackageArtifactModel> FilterPackages(HashSet<PackageArtifactModel> packages, TargetFeedConfig feedConfig)
@@ -740,7 +739,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                                 break;
                         }
 
-                        DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempBlob")));
                     }
                 }
                 else
@@ -750,6 +748,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             }
 
             await Task.WhenAll(publishTasks);
+            DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(TemporaryStagingDir, @"..\", "tempBlob")));
         }
 
         /// <summary>
@@ -1343,7 +1342,10 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     TryAddAssetLocation(blob.Id, assetVersion: null, buildAssets, feedConfig,
                             AddAssetLocationToAssetAssetLocationType.Container);
 
-                    await blobFeedAction.PublishToFlatContainerOneByOneAsync(blobArtifact, maxClients: MaxClients, pushOptions);
+                    using (var clientThrottle = new SemaphoreSlim(MaxClients, MaxClients))
+                    {
+                        await blobFeedAction.UploadAssetAsync(blobArtifact, clientThrottle, pushOptions);
+                    }
                     DeleteTemporaryFile(localBlobPath);
                 }
                 if (Log.HasLoggedErrors)
