@@ -390,6 +390,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             HashSet<string> blobs = new HashSet<string>();
             using HttpClientHandler _handler = new HttpClientHandler()
             {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 CheckCertificateRevocationList = true
             };
             using (HttpClient client = CreateHttpClient(_handler, AzureDevOpsOrg, AzureProject))
