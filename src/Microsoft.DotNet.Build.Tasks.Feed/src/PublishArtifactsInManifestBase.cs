@@ -123,6 +123,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
         private readonly string AzureDevOpsBaseUrl = $"https://dev.azure.com";
 
+        public bool UseApiOverride {get; set;}
+
         public readonly Dictionary<TargetFeedContentType, HashSet<TargetFeedConfig>> FeedConfigs = 
             new Dictionary<TargetFeedContentType, HashSet<TargetFeedConfig>>();
 
@@ -488,7 +490,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             StringBuilder symbolLog = new StringBuilder();
             symbolLog.AppendLine("Publishing Symbols to Symbol server: ");
 
-            if (Directory.Exists(temporarySymbolsLocation) && Directory.EnumerateFileSystemEntries(PackageAssetsBasePath).Any())
+            if (!UseApiOverride)
             {
                 string[] fileEntries = Directory.GetFiles(temporarySymbolsLocation);
 
@@ -594,7 +596,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             Log.LogMessage(MessageImportance.High, $"Package {package.Id}@{package.Version} ({shippingString}) should go to {feedConfig.TargetURL} ({isolatedString}{internalString})");
                         }
 
-                        if (Directory.EnumerateFileSystemEntries(PackageAssetsBasePath).Any())
+                        if (!UseApiOverride)
                         {
                             switch (feedConfig.Type)
                             {
@@ -767,7 +769,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             Log.LogMessage(MessageImportance.High, $"Blob {blob.Id} ({shippingString}) should go to {feedConfig.TargetURL} ({isolatedString}{internalString})");
                         }
 
-                        if (Directory.EnumerateFileSystemEntries(PackageAssetsBasePath).Any())
+                        if (!UseApiOverride)
                         {
                             switch (feedConfig.Type)
                             {
