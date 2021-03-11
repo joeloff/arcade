@@ -463,7 +463,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 symbolLog.AppendLine();
                 Log.LogMessage(MessageImportance.High, symbolLog.ToString());
                 symbolLog.Clear();
-                DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(StagingDir, @"..\", "tempSymb")));
+                //DeleteTemporaryDirectory(Path.GetFullPath(Path.Combine(StagingDir, @"..\", "tempSymb")));
             }
         }
 
@@ -640,8 +640,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             }
 
             await Task.WhenAll(publishTasks);
-            DeleteTemporaryFiles(Path.Combine(StagingDir, @"..\", "tempPackage"));
-            DeleteTemporaryDirectory(Path.Combine(StagingDir, @"..\", "tempPackage"));
+            //DeleteTemporaryFiles(Path.Combine(StagingDir, @"..\", "tempPackage"));
+            //DeleteTemporaryDirectory(Path.Combine(StagingDir, @"..\", "tempPackage"));
         }
 
         private HashSet<PackageArtifactModel> FilterPackages(HashSet<PackageArtifactModel> packages, TargetFeedConfig feedConfig)
@@ -812,8 +812,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 {
                     Log.LogError($"No target feed configuration found for artifact category: '{category}'.");
                 }
-                DeleteTemporaryFiles(Path.Combine(StagingDir, @"..\", "tempBlob"));
-                DeleteTemporaryDirectory(Path.Combine(StagingDir, @"..\", "tempBlob"));
+                //DeleteTemporaryFiles(Path.Combine(StagingDir, @"..\", "tempBlob"));
+                //DeleteTemporaryDirectory(Path.Combine(StagingDir, @"..\", "tempBlob"));
             }
 
             await Task.WhenAll(publishTasks);
