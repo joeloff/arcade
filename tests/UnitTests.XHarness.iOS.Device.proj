@@ -22,6 +22,11 @@
     <HelixBaseUri>https://helix.dot.net</HelixBaseUri>
   </PropertyGroup>
 
+  <!-- For non-ci local runs -->
+  <PropertyGroup Condition=" '$(AGENT_JOBNAME)' == '' ">
+    <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
+  </PropertyGroup>
+
   <!-- Test project which builds app bundle to run via XHarness -->
   <ItemGroup>
     <XHarnessAppleProject Include="$(MSBuildThisFileDirectory)XHarness\XHarness.RunAppBundle.Device.proj" />

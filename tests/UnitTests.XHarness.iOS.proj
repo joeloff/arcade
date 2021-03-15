@@ -25,8 +25,13 @@
   <!-- Test project which builds app bundle to run via XHarness -->
   <ItemGroup>
     <XHarnessAppleProject Include="$(MSBuildThisFileDirectory)XHarness\XHarness.TestAppBundle.proj" />
-    <XHarnessAppleProject Include="$(MSBuildThisFileDirectory)XHarness\XHarness.RunAppBundle.proj" />
+    <!-- <XHarnessAppleProject Include="$(MSBuildThisFileDirectory)XHarness\XHarness.RunAppBundle.proj" /> -->
   </ItemGroup>
+
+  <!-- For non-ci local runs -->
+  <PropertyGroup Condition=" '$(AGENT_JOBNAME)' == '' ">
+    <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
+  </PropertyGroup>
 
   <ItemGroup Condition=" '$(HelixAccessToken)' != '' ">
     <HelixTargetQueue Include="osx.1015.amd64"/>

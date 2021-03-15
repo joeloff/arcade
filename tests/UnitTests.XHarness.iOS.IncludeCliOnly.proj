@@ -20,6 +20,11 @@
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
+  <!-- For non-ci local runs -->
+  <PropertyGroup Condition=" '$(AGENT_JOBNAME)' == '' ">
+    <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
+  </PropertyGroup>
+
   <!-- We test that the XHarness CLI is pre-installed and issue the state command -->
   <ItemGroup>
     <HelixWorkItem Include="xharness-ios-state">
