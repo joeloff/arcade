@@ -12,7 +12,7 @@
     <NETCORE_ENGINEERING_TELEMETRY>Helix</NETCORE_ENGINEERING_TELEMETRY>
   </PropertyGroup>
 
-  <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.InstallDotNetTool" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)"/>
+  <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.InstallDotNetTool2" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)"/>
 
   <UsingTask TaskName="SendHelixJob" AssemblyFile="$(MicrosoftDotNetHelixSdkTasksAssembly)"/>
   <UsingTask TaskName="WaitForHelixJobCompletion" AssemblyFile="$(MicrosoftDotNetHelixSdkTasksAssembly)"/>

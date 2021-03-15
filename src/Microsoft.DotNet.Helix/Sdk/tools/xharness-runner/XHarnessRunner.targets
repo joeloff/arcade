@@ -11,10 +11,7 @@
     <MicrosoftDotNetHelixSdkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)../../../../../artifacts/bin/Microsoft.DotNet.Helix.Sdk/$(Configuration)/net472/Microsoft.DotNet.Helix.Sdk.dll</MicrosoftDotNetHelixSdkTasksAssembly>
   </PropertyGroup>
 
-  <Target Name="AddXHarnessCli"
-          Condition=" '$(IncludeXHarnessCli)' == 'true' "
-          BeforeTargets="CoreTest"
-          AfterTargets="AddDotNetSdk">
+  <Target Name="AddXHarnessCli" Condition=" '$(IncludeXHarnessCli)' == 'true' " BeforeTargets="CoreTest" AfterTargets="AddDotNetSdk">
 
     <Error Condition=" '$(_XHarnessPackageVersion)' == '' " Text="XHarness CLI version not defined! Please specify it using the MicrosoftDotNetXHarnessCLIVersion property" />
 
@@ -25,13 +22,9 @@
       <XHarnessPackageSource>$([System.IO.Path]::GetDirectoryName($(XHarnessNupkgPath))) --no-cache</XHarnessPackageSource>
     </PropertyGroup>
 
-    <InstallDotNetTool Name="$(_XHarnessPackageName)"
-                       DestinationPath="$(ArtifactsTmpDir)"
-                       Version="$(_XHarnessPackageVersion)"
-                       Source="$(XHarnessPackageSource)"
-                       DotnetPath="$(DotNetTool)">
+    <InstallDotNetTool2 Name="$(_XHarnessPackageName)" DestinationPath="$(ArtifactsTmpDir)" Version="$(_XHarnessPackageVersion)" Source="$(XHarnessPackageSource)" DotnetPath="$(DotNetTool)">
       <Output TaskParameter="ToolPath" PropertyName="_XHarnessCliPath" />
-    </InstallDotNetTool>
+    </InstallDotNetTool2>
 
     <!-- We install the tool locally on the build machine, then, installed as-is, we zip it up and send as a correlation payload -->
     <PropertyGroup>
@@ -69,10 +62,7 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="BuildXHarnessAndroidProjects"
-          Condition=" '@(XHarnessAndroidProject)' != '' "
-          BeforeTargets="CoreBuild"
-          Outputs="%(XHarnessAndroidProject.Identity)%(XHarnessAndroidProject.AdditionalProperties)">
+  <Target Name="BuildXHarnessAndroidProjects" Condition=" '@(XHarnessAndroidProject)' != '' " BeforeTargets="CoreBuild" Outputs="%(XHarnessAndroidProject.Identity)%(XHarnessAndroidProject.AdditionalProperties)">
     <PropertyGroup>
       <_CurrentXHarnessAndroidProject>%(XHarnessAndroidProject.Identity)</_CurrentXHarnessAndroidProject>
       <_CurrentAdditionalProperties>%(XHarnessAndroidProject.AdditionalProperties)</_CurrentAdditionalProperties>
@@ -82,10 +72,7 @@
     </MSBuild>
   </Target>
 
-  <Target Name="BuildXHarnessAppleProjects"
-          Condition=" '@(XHarnessAppleProject)' != '' "
-          BeforeTargets="CoreBuild"
-          Outputs="%(XHarnessAppleProject.Identity)%(XHarnessAppleProject.AdditionalProperties)">
+  <Target Name="BuildXHarnessAppleProjects" Condition=" '@(XHarnessAppleProject)' != '' " BeforeTargets="CoreBuild" Outputs="%(XHarnessAppleProject.Identity)%(XHarnessAppleProject.AdditionalProperties)">
     <PropertyGroup>
       <_CurrentXHarnessAppleProject>%(XHarnessAppleProject.Identity)</_CurrentXHarnessAppleProject>
       <_CurrentAdditionalProperties>%(XHarnessAppleProject.AdditionalProperties)</_CurrentAdditionalProperties>
@@ -95,30 +82,18 @@
     </MSBuild>
   </Target>
 
-  <Target Name="CreateAndroidWorkItems"
-          Condition=" '@(XHarnessApkToTest)' != '' "
-          BeforeTargets="CoreTest">
-    <CreateXHarnessAndroidWorkItems Apks="@(XHarnessApkToTest)"
-                                    IsPosixShell="$(IsPosixShell)">
+  <Target Name="CreateAndroidWorkItems" Condition=" '@(XHarnessApkToTest)' != '' " BeforeTargets="CoreTest">
+    <CreateXHarnessAndroidWorkItems Apks="@(XHarnessApkToTest)" IsPosixShell="$(IsPosixShell)">
       <Output TaskParameter="WorkItems" ItemName="HelixWorkItem"/>
     </CreateXHarnessAndroidWorkItems>
   </Target>
 
-  <Target Name="CreateAppleWorkItems"
-          Condition=" '@(XHarnessAppBundleToTest)' != '' "
-          BeforeTargets="CoreTest">
-    <DownloadFile SourceUrl="$(XHarnessAppleProvisioningProfileUrl)"
-                  Condition=" '$(XHarnessAppleProvisioningProfileUrl)' != '' "
-                  DestinationFolder="$(ArtifactsTmpDir)"
-                  SkipUnchangedFiles="True"
-                  Retries="5">
+  <Target Name="CreateAppleWorkItems" Condition=" '@(XHarnessAppBundleToTest)' != '' " BeforeTargets="CoreTest">
+    <DownloadFile SourceUrl="$(XHarnessAppleProvisioningProfileUrl)" Condition=" '$(XHarnessAppleProvisioningProfileUrl)' != '' " DestinationFolder="$(ArtifactsTmpDir)" SkipUnchangedFiles="True" Retries="5">
       <Output TaskParameter="DownloadedFile" ItemName="_XHarnessProvisioningProfile" />
     </DownloadFile>
 
-    <CreateXHarnessAppleWorkItems AppBundles="@(XHarnessAppBundleToTest)"
-                                  IsPosixShell="$(IsPosixShell)"
-                                  XcodeVersion="$(XHarnessXcodeVersion)"
-                                  ProvisioningProfilePath="@(_XHarnessProvisioningProfile)">
+    <CreateXHarnessAppleWorkItems AppBundles="@(XHarnessAppBundleToTest)" IsPosixShell="$(IsPosixShell)" XcodeVersion="$(XHarnessXcodeVersion)" ProvisioningProfilePath="@(_XHarnessProvisioningProfile)">
       <Output TaskParameter="WorkItems" ItemName="HelixWorkItem"/>
     </CreateXHarnessAppleWorkItems>
   </Target>
