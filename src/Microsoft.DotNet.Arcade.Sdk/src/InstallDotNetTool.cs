@@ -112,7 +112,7 @@ namespace Microsoft.DotNet.Arcade.Sdk
             args.Add(Name);
 
             var command = commandFactory.Create(string.IsNullOrEmpty(DotnetPath) ? "dotnet" : DotnetPath, args);
-            CommandResult result = command.Execute();
+            CommandResult result = command.Execute(Log);
 
             if (result.ExitCode != 0)
             {

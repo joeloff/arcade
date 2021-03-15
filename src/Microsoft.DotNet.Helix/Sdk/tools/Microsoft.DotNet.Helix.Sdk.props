@@ -4,15 +4,15 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.NETCoreSdk.BundledVersions.props" Condition="Exists('$(MSBuildToolsPath)\Microsoft.NETCoreSdk.BundledVersions.props')" />
 
   <PropertyGroup Condition="'$(MicrosoftDotNetHelixSdkTasksAssembly)' == ''">
-    <MicrosoftDotNetHelixSdkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)netcoreapp3.1/Microsoft.DotNet.Helix.Sdk.dll</MicrosoftDotNetHelixSdkTasksAssembly>
-    <MicrosoftDotNetHelixSdkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)net472/Microsoft.DotNet.Helix.Sdk.dll</MicrosoftDotNetHelixSdkTasksAssembly>
+    <MicrosoftDotNetHelixSdkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\..\..\..\artifacts\bin\Microsoft.DotNet.Helix.Sdk\$(Configuration)\netcoreapp3.1\publish\Microsoft.DotNet.Helix.Sdk.dll</MicrosoftDotNetHelixSdkTasksAssembly>
+    <MicrosoftDotNetHelixSdkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\..\..\..\artifacts\bin\Microsoft.DotNet.Helix.Sdk\$(Configuration)\net472\publish\Microsoft.DotNet.Helix.Sdk.dll</MicrosoftDotNetHelixSdkTasksAssembly>
   </PropertyGroup>
 
   <PropertyGroup>
     <NETCORE_ENGINEERING_TELEMETRY>Helix</NETCORE_ENGINEERING_TELEMETRY>
   </PropertyGroup>
 
-  <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.InstallDotNetTool2" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)"/>
+  <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.InstallDotNetTool" AssemblyFile="$(MSBuildThisFileDirectory)..\..\..\..\artifacts\bin\Microsoft.DotNet.Arcade.Sdk\$(Configuration)\netcoreapp3.1\publish\Microsoft.DotNet.Arcade.Sdk.dll"/>
 
   <UsingTask TaskName="SendHelixJob" AssemblyFile="$(MicrosoftDotNetHelixSdkTasksAssembly)"/>
   <UsingTask TaskName="WaitForHelixJobCompletion" AssemblyFile="$(MicrosoftDotNetHelixSdkTasksAssembly)"/>

@@ -7,7 +7,7 @@
     <DotNetCliPackageType Condition="'$(DotNetCliPackageType)' != 'sdk'">aspnetcore-runtime</DotNetCliPackageType>
     <DotNetCliVersion Condition=" '$(DotNetCliVersion)' == '' ">3.1.5</DotNetCliVersion>
     <DotNetCliVersion Condition=" '$(DotNetCliVersion)' == '$(BundledNETCoreAppPackageVersion)' AND '$(DotNetCliPackageType)' == 'aspnetcore-runtime' ">6.0.0-preview.1.21103.6</DotNetCliVersion>
-    <MicrosoftDotNetHelixSdkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)../../../../../artifacts/bin/Microsoft.DotNet.Helix.Sdk/$(Configuration)/netcoreapp3.1/Microsoft.DotNet.Helix.Sdk.dll</MicrosoftDotNetHelixSdkTasksAssembly>
+    <MicrosoftDotNetHelixSdkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)../../../../../artifacts/bin/Microsoft.DotNet.Helix.Sdk/$(Configuration)/netcoreapp3.1/publish/Microsoft.DotNet.Helix.Sdk.dll</MicrosoftDotNetHelixSdkTasksAssembly>
     <MicrosoftDotNetHelixSdkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)../../../../../artifacts/bin/Microsoft.DotNet.Helix.Sdk/$(Configuration)/net472/Microsoft.DotNet.Helix.Sdk.dll</MicrosoftDotNetHelixSdkTasksAssembly>
   </PropertyGroup>
 
@@ -22,9 +22,9 @@
       <XHarnessPackageSource>$([System.IO.Path]::GetDirectoryName($(XHarnessNupkgPath))) --no-cache</XHarnessPackageSource>
     </PropertyGroup>
 
-    <InstallDotNetTool2 Name="$(_XHarnessPackageName)" DestinationPath="$(ArtifactsTmpDir)" Version="$(_XHarnessPackageVersion)" Source="$(XHarnessPackageSource)" DotnetPath="$(DotNetTool)">
+    <InstallDotNetTool Name="$(_XHarnessPackageName)" DestinationPath="$(ArtifactsTmpDir)" Version="$(_XHarnessPackageVersion)" Source="$(XHarnessPackageSource)" DotnetPath="$(DotNetTool)">
       <Output TaskParameter="ToolPath" PropertyName="_XHarnessCliPath" />
-    </InstallDotNetTool2>
+    </InstallDotNetTool>
 
     <!-- We install the tool locally on the build machine, then, installed as-is, we zip it up and send as a correlation payload -->
     <PropertyGroup>
