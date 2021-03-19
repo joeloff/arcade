@@ -15,10 +15,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 using Microsoft.Build.Framework;
 using Microsoft.DotNet.Build.Tasks.Feed.Model;
-using Microsoft.DotNet.Build.Tasks.Feed.src;
 using Microsoft.DotNet.Maestro.Client;
 using Microsoft.DotNet.Maestro.Client.Models;
 using Microsoft.DotNet.VersionTools.BuildManifest.Model;
@@ -383,7 +381,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                     CheckCertificateRevocationList = true
                 };
-            using (HttpClient client = CreateHttpClient(handler, AzureDevOpsOrg))
+            using (HttpClient client = CreateAzdoClient(handler, AzureDevOpsOrg))
             {
                 string localSymbolPath = "";
                 foreach (var symbol in symbolsToPublish)
@@ -640,7 +638,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             };
         }
 
-        public HttpClient CreateHttpClient(HttpClientHandler handler, string accountName, string projectName = null, string versionOverride = null, string baseAddressSubpath = null)
+        public HttpClient CreateAzdoClient(HttpClientHandler handler, string accountName, string projectName = null, string versionOverride = null, string baseAddressSubpath = null)
         {
 
             string address = $"https://{baseAddressSubpath}dev.azure.com/{accountName}/";
@@ -671,12 +669,11 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         {
             using (HttpClientHandler handler = new HttpClientHandler { CheckCertificateRevocationList = true })
             {
-                using (HttpClient client = CreateHttpClient(handler, AzureDevOpsOrg, AzureProject))
+                using (HttpClient client = CreateAzdoClient(handler, AzureDevOpsOrg, AzureProject))
                 {
                     string uri =
                         $"{AzureDevOpsBaseUrl}/{AzureDevOpsOrg}/{AzureProject}/_apis/build/builds/{BuildId}/artifacts?api-version={AzureDevOpsFeedsApiVersion}";
-                    using HttpRequestMessage getMessage = new HttpRequestMessage(HttpMethod.Get, uri);
-                    using HttpResponseMessage response = await client.SendAsync(getMessage);
+                    using HttpResponseMessage response = await client.GetAsync(uri);
                     response.EnsureSuccessStatusCode();
                     string responseBody = await response.Content.ReadAsStringAsync();
                     BuildArtifacts buildArtifacts = JsonConvert.DeserializeObject<BuildArtifacts>(responseBody);
@@ -706,10 +703,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 try
                 {
-                    CancellationTokenSource timeoutTokenSource =
-                        new CancellationTokenSource(TimeSpan.FromMinutes(TimeoutInMinutes));
-                    using HttpRequestMessage getMessage = new HttpRequestMessage(HttpMethod.Get, uri);
-                    using HttpResponseMessage response = await client.SendAsync(getMessage, timeoutTokenSource.Token);
+                    CancellationTokenSource timeoutTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(TimeoutInMinutes));
+                    using HttpResponseMessage response = await client.GetAsync(uri, timeoutTokenSource.Token);
                     if (response.StatusCode == HttpStatusCode.NotFound ||
                         response.ReasonPhrase.StartsWith(
                             "The requested URI does not represent any resource on the server.",
@@ -1266,7 +1261,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 CheckCertificateRevocationList = true
             };
-            using (HttpClient client = CreateHttpClient(handler, AzureDevOpsOrg, AzureProject))
+            using (HttpClient client = CreateAzdoClient(handler, AzureDevOpsOrg, AzureProject))
             {
                 foreach (var blob in blobsToPublish)
                 {
@@ -1350,7 +1345,23 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             Dictionary<string, HashSet<Asset>> buildAssets,
             TargetFeedConfig feedConfig)
         {
-            if (UseApiOverride)
+            string containerId = GetContainerId().Result;
+            var blobFeedAction = CreateBlobFeedAction(feedConfig);
+
+            var pushOptions = new PushOptions
+            {
+                AllowOverwrite = feedConfig.AllowOverwrite,
+                PassIfExistingItemIdentical = true
+            };
+
+
+            using HttpClientHandler handler = new HttpClientHandler()
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                CheckCertificateRevocationList = true
+            };
+            string localPackagePath = "";
+            using (HttpClient client = CreateAzdoClient(handler, AzureDevOpsOrg))
             {
                 var packages = packagesToPublish.Select(p =>
                 {
@@ -1449,7 +1460,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                 CheckCertificateRevocationList = true
             };
-            using (HttpClient client = CreateHttpClient(handler, AzureDevOpsOrg, AzureProject))
+            using (HttpClient client = CreateAzdoClient(handler, AzureDevOpsOrg, AzureProject))
             {
                 {
                     foreach (var blob in blobsToPublish)
@@ -1644,7 +1655,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 return null;
             }
         }
-
         private async Task PushPackageToNugetFeed(TargetFeedConfig feedConfig, string localPackagePath, string id , string version)
         {
             var parsedUri = Regex.Match(feedConfig.TargetURL, PublishingConstants.AzDoNuGetFeedPattern);
